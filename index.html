@@ -50,7 +50,7 @@
             display: none;
         }
 
-        /* Стили для модального окна */
+        /* УЛУЧШЕННЫЕ СТИЛИ ДЛЯ МОДАЛЬНОГО ОКНА */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -60,19 +60,40 @@
             bottom: 0;
             background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
+            padding: 16px;
+            box-sizing: border-box;
         }
         .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            position: relative;
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 90%;
-            width: 500px;
-            max-height: 80vh;
+            border-radius: 12px;
+            max-height: 90vh;
             overflow-y: auto;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Для очень маленьких экранов */
+        @media (max-width: 480px) {
+            .modal-overlay {
+                padding: 8px;
+            }
+            .modal-content {
+                border-radius: 8px;
+                max-height: 95vh;
+            }
+        }
+        
+        /* Для очень высоких экранов */
+        @media (min-height: 800px) {
+            .modal-content {
+                max-height: 80vh;
+            }
         }
     </style>
 </head>
@@ -122,41 +143,49 @@
     <!-- PWA Install Button -->
     <button id="installButton" aria-label="Install app">📲 Установить</button>
 
-    <!-- Модальное окно статистики студента -->
+    <!-- УЛУЧШЕННОЕ МОДАЛЬНОЕ ОКНО СТАТИСТИКИ СТУДЕНТА -->
     <div id="student-stats-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="student-stats-name" class="text-lg font-bold">Статистика студента</h3>
-                <button id="close-stats-modal" class="text-gray-500 hover:text-gray-700 text-xl">
+            <!-- Заголовок -->
+            <div class="flex justify-between items-center p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-12">
+                <h3 id="student-stats-name" class="text-lg font-bold text-gray-800 truncate pr-2">Статистика студента</h3>
+                <button id="close-stats-modal" class="text-gray-500 hover:text-gray-700 text-xl flex-shrink-0">
                     ✕
                 </button>
             </div>
             
-            <!-- Селектор месяца -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">📅 Месяц</label>
-                <select id="stats-month-selector" class="w-full p-2 border border-gray-300 rounded-lg bg-white">
-                    <!-- Месяцы будут загружены динамически -->
-                </select>
+            <!-- Контент с прокруткой -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <!-- Селектор месяца -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">📅 Месяц</label>
+                    <select id="stats-month-selector" class="w-full p-3 border border-gray-300 rounded-lg bg-white text-base">
+                        <!-- Месяцы будут загружены динамически -->
+                    </select>
+                </div>
+                
+                <!-- Контент статистики -->
+                <div id="student-stats-content">
+                    <!-- Статистика будет загружена здесь -->
+                </div>
             </div>
             
-            <div id="student-stats-content">
-                <!-- Статистика будет загружена здесь -->
-            </div>
-            
-            <div class="mt-4 flex justify-between">
-                <button id="prev-month-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">
-                    ← Предыдущий месяц
-                </button>
-                <button id="next-month-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">
-                    Следующий месяц →
-                </button>
-            </div>
-            
-            <div class="mt-4 flex justify-end">
-                <button id="close-stats-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg">
-                    Закрыть
-                </button>
+            <!-- Кнопки навигации -->
+            <div class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-12">
+                <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                    <button id="prev-month-btn" class="flex-1 bg-gray-500 text-white px-4 py-3 rounded-lg text-base font-medium disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        ← Пред. месяц
+                    </button>
+                    <button id="next-month-btn" class="flex-1 bg-gray-500 text-white px-4 py-3 rounded-lg text-base font-medium disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        След. месяц →
+                    </button>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button id="close-stats-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg text-base font-medium hover:bg-blue-600">
+                        Закрыть
+                    </button>
+                </div>
             </div>
         </div>
     </div>

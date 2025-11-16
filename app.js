@@ -139,6 +139,8 @@ function updateMonthSelector() {
     });
 }
 
+// В функции updateStudentStatsDisplay в app.js заменим содержимое на:
+
 function updateStudentStatsDisplay() {
     if (!currentStudentId || !currentStatsMonth) return;
     
@@ -149,48 +151,52 @@ function updateStudentStatsDisplay() {
     const content = document.getElementById('student-stats-content');
     content.innerHTML = `
         <div class="space-y-4">
-            <div>
-                <p class="text-sm text-gray-600">Группа: ${student.group}</p>
-                <p class="text-sm text-gray-600">Месяц: ${formatMonthForDisplay(currentStatsMonth)}</p>
+            <div class="text-sm text-gray-600 space-y-1">
+                <p class="truncate"><span class="font-medium">Группа:</span> ${student.group}</p>
+                <p><span class="font-medium">Месяц:</span> ${formatMonthForDisplay(currentStatsMonth)}</p>
             </div>
             
-            <div class="grid grid-cols-3 gap-4 text-center">
-                <div class="bg-green-50 p-3 rounded-lg">
-                    <div class="text-2xl font-bold text-green-600">${stats.presentDays}</div>
-                    <div class="text-sm text-green-800">Присутствовал</div>
+            <!-- Адаптивная сетка статистики -->
+            <div class="grid grid-cols-1 xs:grid-cols-3 gap-3 text-center">
+                <div class="bg-green-50 p-3 rounded-lg border border-green-100">
+                    <div class="text-xl xs:text-2xl font-bold text-green-600">${stats.presentDays}</div>
+                    <div class="text-xs xs:text-sm text-green-800 mt-1">Присутствовал</div>
                 </div>
-                <div class="bg-red-50 p-3 rounded-lg">
-                    <div class="text-2xl font-bold text-red-600">${stats.absentDays}</div>
-                    <div class="text-sm text-red-800">Отсутствовал</div>
+                <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+                    <div class="text-xl xs:text-2xl font-bold text-red-600">${stats.absentDays}</div>
+                    <div class="text-xs xs:text-sm text-red-800 mt-1">Отсутствовал</div>
                 </div>
-                <div class="bg-blue-50 p-3 rounded-lg">
-                    <div class="text-2xl font-bold text-blue-600">${stats.attendanceRate}%</div>
-                    <div class="text-sm text-blue-800">Посещаемость</div>
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <div class="text-xl xs:text-2xl font-bold text-blue-600">${stats.attendanceRate}%</div>
+                    <div class="text-xs xs:text-sm text-blue-800 mt-1">Посещаемость</div>
                 </div>
             </div>
             
             ${stats.dailyRecords.length > 0 ? `
                 <div>
-                    <h4 class="font-medium mb-2">Записи за месяц:</h4>
-                    <div class="space-y-2 max-h-40 overflow-y-auto">
+                    <h4 class="font-medium mb-3 text-gray-800">Записи за месяц:</h4>
+                    <div class="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
                         ${stats.dailyRecords.map(record => `
-                            <div class="flex justify-between items-center p-2 border-b">
-                                <span>${formatDate(record.date)}</span>
-                                <span class="${record.present ? 'text-green-600' : 'text-red-600'}">
+                            <div class="flex justify-between items-center p-2 bg-white rounded border border-gray-100">
+                                <span class="text-sm text-gray-700">${formatDate(record.date)}</span>
+                                <span class="${record.present ? 'text-green-600' : 'text-red-600'} text-sm font-medium">
                                     ${record.present ? '✅ Присутствовал' : '❌ Отсутствовал'}
                                 </span>
                             </div>
                         `).join('')}
                     </div>
                 </div>
-            ` : '<p class="text-gray-500 text-center">Нет записей о посещаемости за этот месяц</p>'}
+            ` : `
+                <div class="text-center py-6 bg-gray-50 rounded-lg border border-gray-200">
+                    <p class="text-gray-500 text-sm">Нет записей о посещаемости за этот месяц</p>
+                </div>
+            `}
         </div>
     `;
     
     // Обновляем состояние кнопок навигации
     updateNavigationButtons();
 }
-
 function updateNavigationButtons() {
     const currentIndex = availableMonths.indexOf(currentStatsMonth);
     const prevBtn = document.getElementById('prev-month-btn');
