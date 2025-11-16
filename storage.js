@@ -28,20 +28,15 @@ function loadData() {
     // Возвращаем структуру по умолчанию если данных нет
     return {
         groups: {
-            'group1': [
-                { id: 1, name: 'Иванов Иван' },
-                { id: 2, name: 'Петрова Мария' },
-                { id: 3, name: 'Сидоров Алексей' }
+            'Выдуманная група 1': [
+                { id: 1, name: 'Выдуманный Иван' },
+                { id: 2, name: 'Ненастоящая Мария' },
+                { id: 3, name: 'Липовый Алексей' }
             ],
-            'group2': [
-                { id: 4, name: 'Козлова Анна' },
-                { id: 5, name: 'Николаев Дмитрий' },
+            'Выдуманная група 2': [
+                { id: 4, name: 'фейковая Анна' },
+                { id: 5, name: 'Лже Дмитрий' },
                 { id: 6, name: 'Федорова Елена' }
-            ],
-            'group3': [
-                { id: 7, name: 'Васильев Павел' },
-                { id: 8, name: 'Михайлова Ольга' },
-                { id: 9, name: 'Алексеев Сергей' }
             ]
         },
         attendance: {} // { "2024-01-15": { "1": true, "2": false, ... } }
@@ -72,6 +67,12 @@ function getGroups() {
     return data.groups;
 }
 
+// Получить список названий групп
+function getGroupNames() {
+    const data = loadData();
+    return Object.keys(data.groups);
+}
+
 // Получить следующий статус для студента
 function getNextStatus(studentId, date) {
     const currentAttendance = getAttendanceForDate(date);
@@ -83,73 +84,87 @@ function getNextStatus(studentId, date) {
     return null;
 }
 
-// Экспорт данных для скачивания
-function exportData() {
+// Получить статистику студента за конкретный месяц
+function getStudentStatsForMonth(studentId, year, month) {
     const data = loadData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `attendance_backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    
-    URL.revokeObjectURL(url);
-    
-    // Показываем уведомление
-    showNotification('Данные экспортированы!', 'success');
-}
-
-// Импорт данных из файла
-function importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            
-            // Простая валидация структуры данных
-            if (!data.groups || !data.attendance) {
-                throw new Error('Неверный формат файла');
-            }
-            
-            if (saveData(data)) {
-                updateAttendanceList();
-                showNotification('Данные успешно импортированы!', 'success');
-            } else {
-                showNotification('Ошибка при сохранении данных', 'error');
-            }
-        } catch (error) {
-            console.error('Ошибка импорта:', error);
-            showNotification('Ошибка при импорте файла: ' + error.message, 'error');
-        }
+    const stats = {
+        totalDays: 0,
+        presentDays: 0,
+        absentDays: 0,
+        attendanceRate: 0,
+        dailyRecords: [],
+        month: `${year}-${month.toString().padStart(2, '0')}`
     };
-    reader.readAsText(file);
     
-    // Сбрасываем input чтобы можно было загрузить тот же файл снова
-    event.target.value = '';
+    // Собираем записи посещаемости для студента за указанный месяц
+    Object.entries(data.attendance).forEach(([date, dayAttendance]) => {
+        const recordYear = date.split('-')[0];
+        const recordMonth = date.split('-')[1];
+        
+        if (recordYear === year.toString() && recordMonth === month.toString().padStart(2, '0')) {
+            if (dayAttendance[studentId] !== undefined) {
+                stats.totalDays++;
+                
+                if (dayAttendance[studentId] === true) {
+                    stats.presentDays++;
+                } else if (dayAttendance[studentId] === false) {
+                    stats.absentDays++;
+                }
+                
+                // Добавляем запись за день
+                stats.dailyRecords.push({
+                    date: date,
+                    present: dayAttendance[studentId]
+                });
+            }
+        }
+    });
+    
+    // Сортируем записи по дате (новые сначала)
+    stats.dailyRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Рассчитываем процент посещаемости
+    if (stats.totalDays > 0) {
+        stats.attendanceRate = Math.round((stats.presentDays / stats.totalDays) * 100);
+    }
+    
+    return stats;
 }
 
-// Показать уведомление
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+// Получить список месяцев, для которых есть данные о студенте
+function getAvailableMonthsForStudent(studentId) {
+    const data = loadData();
+    const monthsSet = new Set();
     
-    notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-    notification.textContent = message;
+    Object.keys(data.attendance).forEach(date => {
+        if (data.attendance[date][studentId] !== undefined) {
+            const [year, month] = date.split('-');
+            monthsSet.add(`${year}-${month}`);
+        }
+    });
     
-    document.body.appendChild(notification);
-    
-    // Автоматически скрываем через 3 секунды
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+    // Преобразуем в массив и сортируем по убыванию (новые месяцы first)
+    return Array.from(monthsSet).sort((a, b) => b.localeCompare(a));
 }
 
+// Получить студента по ID
+function getStudentById(studentId) {
+    const data = loadData();
+    
+    for (const groupName in data.groups) {
+        const student = data.groups[groupName].find(s => s.id === studentId);
+        if (student) {
+            return {
+                ...student,
+                group: groupName
+            };
+        }
+    }
+    
+    return null;
+}
 
-// Получить статистику студента
+// Получить общую статистику студента (все время)
 function getStudentStats(studentId) {
     const data = loadData();
     const stats = {
@@ -192,27 +207,70 @@ function getStudentStats(studentId) {
     return stats;
 }
 
-// Получить студента по ID
-function getStudentById(studentId) {
+// Экспорт данных для скачивания
+function exportData() {
     const data = loadData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     
-    for (const groupName in data.groups) {
-        const student = data.groups[groupName].find(s => s.id === studentId);
-        if (student) {
-            return {
-                ...student,
-                group: groupName
-            };
-        }
-    }
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
     
-    return null;
+    URL.revokeObjectURL(url);
+    
+    // Показываем уведомление
+    showNotification('Данные экспортированы!', 'success');
 }
 
-// storage.js - добавим эту функцию
+// Импорт данных из файла
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            // Простая валидация структуры данных
+            if (!data.groups || typeof data.groups !== 'object') {
+                throw new Error('Неверный формат файла: отсутствует groups');
+            }
+            
+            if (!data.attendance || typeof data.attendance !== 'object') {
+                throw new Error('Неверный формат файла: отсутствует attendance');
+            }
+            
+            if (saveData(data)) {
+                showNotification('Данные успешно импортированы!', 'success');
+            } else {
+                showNotification('Ошибка при сохранении данных', 'error');
+            }
+        } catch (error) {
+            console.error('Ошибка импорта:', error);
+            showNotification('Ошибка при импорте файла: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+    
+    // Сбрасываем input чтобы можно было загрузить тот же файл снова
+    event.target.value = '';
+}
 
-// Получить список названий групп
-function getGroupNames() {
-    const data = loadData();
-    return Object.keys(data.groups);
+// Показать уведомление
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    
+    notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Автоматически скрываем через 3 секунды
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
 }

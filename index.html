@@ -70,7 +70,7 @@
             padding: 20px;
             border-radius: 10px;
             max-width: 90%;
-            width: 400px;
+            width: 500px;
             max-height: 80vh;
             overflow-y: auto;
         }
@@ -132,8 +132,25 @@
                 </button>
             </div>
             
+            <!-- Селектор месяца -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">📅 Месяц</label>
+                <select id="stats-month-selector" class="w-full p-2 border border-gray-300 rounded-lg bg-white">
+                    <!-- Месяцы будут загружены динамически -->
+                </select>
+            </div>
+            
             <div id="student-stats-content">
                 <!-- Статистика будет загружена здесь -->
+            </div>
+            
+            <div class="mt-4 flex justify-between">
+                <button id="prev-month-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">
+                    ← Предыдущий месяц
+                </button>
+                <button id="next-month-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg">
+                    Следующий месяц →
+                </button>
             </div>
             
             <div class="mt-4 flex justify-end">
