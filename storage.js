@@ -147,3 +147,72 @@ function showNotification(message, type = 'info') {
         notification.remove();
     }, 3000);
 }
+
+
+// Получить статистику студента
+function getStudentStats(studentId) {
+    const data = loadData();
+    const stats = {
+        totalDays: 0,
+        presentDays: 0,
+        absentDays: 0,
+        attendanceRate: 0,
+        recentRecords: []
+    };
+    
+    // Собираем все записи посещаемости для студента
+    Object.entries(data.attendance).forEach(([date, dayAttendance]) => {
+        if (dayAttendance[studentId] !== undefined) {
+            stats.totalDays++;
+            
+            if (dayAttendance[studentId] === true) {
+                stats.presentDays++;
+            } else if (dayAttendance[studentId] === false) {
+                stats.absentDays++;
+            }
+            
+            // Добавляем в последние записи (максимум 10)
+            if (stats.recentRecords.length < 10) {
+                stats.recentRecords.push({
+                    date: date,
+                    present: dayAttendance[studentId]
+                });
+            }
+        }
+    });
+    
+    // Сортируем последние записи по дате (новые сначала)
+    stats.recentRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Рассчитываем процент посещаемости
+    if (stats.totalDays > 0) {
+        stats.attendanceRate = Math.round((stats.presentDays / stats.totalDays) * 100);
+    }
+    
+    return stats;
+}
+
+// Получить студента по ID
+function getStudentById(studentId) {
+    const data = loadData();
+    
+    for (const groupName in data.groups) {
+        const student = data.groups[groupName].find(s => s.id === studentId);
+        if (student) {
+            return {
+                ...student,
+                group: groupName
+            };
+        }
+    }
+    
+    return null;
+}
+
+// storage.js - добавим эту функцию
+
+// Получить список названий групп
+function getGroupNames() {
+    const data = loadData();
+    return Object.keys(data.groups);
+}

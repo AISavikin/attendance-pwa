@@ -49,6 +49,31 @@
             z-index: 1000;
             display: none;
         }
+
+        /* Стили для модального окна */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 90%;
+            width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -59,19 +84,15 @@
             <div class="mb-3">
                 <label class="block text-sm font-medium text-gray-700 mb-1">📅 Дата</label>
                 <input type="date" id="date-selector" 
-                       class="w-full p-2 border border-gray-300 rounded-lg bg-white"
-                       onchange="updateAttendanceList()">
+                       class="w-full p-2 border border-gray-300 rounded-lg bg-white">
             </div>
 
             <!-- Group Selector -->
             <div class="mb-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">👥 Группа</label>
                 <select id="group-selector" 
-                        class="w-full p-2 border border-gray-300 rounded-lg bg-white"
-                        onchange="updateAttendanceList()">
-                    <option value="group1">Группа 1</option>
-                    <option value="group2">Группа 2</option>
-                    <option value="group3">Группа 3</option>
+                        class="w-full p-2 border border-gray-300 rounded-lg bg-white">
+                    <!-- Группы будут загружены динамически -->
                 </select>
             </div>
         </div>
@@ -87,142 +108,44 @@
         </div>
     </div>
 
+    <!-- Кнопки управления данными -->
+    <div class="fixed bottom-4 left-4 space-x-2">
+        <button id="export-btn" class="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm">
+            📤 Экспорт
+        </button>
+        <label class="bg-green-500 text-white px-3 py-2 rounded-lg text-sm cursor-pointer">
+            📥 Импорт
+            <input type="file" id="import-file" accept=".json" class="hidden">
+        </label>
+    </div>
+
     <!-- PWA Install Button -->
     <button id="installButton" aria-label="Install app">📲 Установить</button>
 
-    <script>
-        // Mock data - в реальном приложении будет приходить с сервера
-        const studentsData = {
-            'group1': [
-                { id: 1, name: 'Иванов Иван', present: null },
-                { id: 2, name: 'Петрова Мария', present: null },
-                { id: 3, name: 'Сидоров Алексей', present: null }
-            ],
-            'group2': [
-                { id: 4, name: 'Козлова Анна', present: null },
-                { id: 5, name: 'Николаев Дмитрий', present: null },
-                { id: 6, name: 'Федорова Елена', present: null }
-            ],
-            'group3': [
-                { id: 7, name: 'Васильев Павел', present: null },
-                { id: 8, name: 'Михайлова Ольга', present: null },
-                { id: 9, name: 'Алексеев Сергей', present: null }
-            ]
-        };
+    <!-- Модальное окно статистики студента -->
+    <div id="student-stats-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="student-stats-name" class="text-lg font-bold">Статистика студента</h3>
+                <button id="close-stats-modal" class="text-gray-500 hover:text-gray-700 text-xl">
+                    ✕
+                </button>
+            </div>
+            
+            <div id="student-stats-content">
+                <!-- Статистика будет загружена здесь -->
+            </div>
+            
+            <div class="mt-4 flex justify-end">
+                <button id="close-stats-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
 
-        // Функция для обновления списка студентов
-        function updateAttendanceList() {
-            const group = document.getElementById('group-selector').value;
-            const students = studentsData[group] || [];
-            
-            const container = document.getElementById('students-container');
-            container.innerHTML = '';
-            
-            students.forEach(student => {
-                const studentCard = document.createElement('div');
-                studentCard.className = `student-card border-2 rounded-lg p-3 present-${student.present}`;
-                studentCard.onclick = () => toggleAttendance(student.id, studentCard);
-                
-                studentCard.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="font-medium text-gray-800">${student.name}</span>
-                        <div class="flex items-center">
-                            <span class="text-2xl mr-2 student-status">
-                                ${student.present === true ? '✅' : student.present === false ? '❌' : '⬜'}
-                            </span>
-                        </div>
-                    </div>
-                `;
-                
-                container.appendChild(studentCard);
-            });
-        }
-        
-        // Функция для переключения посещаемости
-        function toggleAttendance(studentId, element) {
-            const group = document.getElementById('group-selector').value;
-            const students = studentsData[group];
-            const student = students.find(s => s.id === studentId);
-            
-            // Циклическое переключение: null -> true -> false -> null
-            if (student.present === null) {
-                student.present = true;
-            } else if (student.present === true) {
-                student.present = false;
-            } else {
-                student.present = null;
-            }
-            
-            // Обновляем внешний вид карточки
-            element.classList.remove('present-true', 'present-false', 'present-null');
-            element.classList.add('present-' + student.present);
-            
-            // Обновляем иконку
-            const icon = element.querySelector('.student-status');
-            icon.textContent = student.present === true ? '✅' : student.present === false ? '❌' : '⬜';
-            
-            // В реальном приложении здесь был бы fetch на сервер
-            console.log('Attendance updated:', { studentId, present: student.present });
-            
-            // Виброотклик на мобильных
-            if ('vibrate' in navigator) {
-                navigator.vibrate(10);
-            }
-        }
-
-        // PWA Installation
-        let deferredPrompt;
-        const installButton = document.getElementById('installButton');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the mini-infobar from appearing on mobile
-            e.preventDefault();
-            // Stash the event so it can be triggered later
-            deferredPrompt = e;
-            // Show the install button
-            installButton.style.display = 'block';
-        });
-
-        installButton.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            
-            // Show the install prompt
-            deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to the install prompt: ${outcome}`);
-            // We no longer need the prompt
-            deferredPrompt = null;
-            // Hide the install button
-            installButton.style.display = 'none';
-        });
-
-        window.addEventListener('appinstalled', () => {
-            // Hide the install button
-            installButton.style.display = 'none';
-            // Clear the deferredPrompt variable
-            deferredPrompt = null;
-            console.log('PWA was installed');
-        });
-
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateSelector = document.getElementById('date-selector');
-            const today = new Date().toISOString().split('T')[0];
-            dateSelector.value = today;
-            
-            updateAttendanceList();
-        // Регистрация Service Worker
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-              console.log('SW registered: ', registration);
-            })
-            .catch(registrationError => {
-              console.log('SW registration failed: ', registrationError);
-            });
-        }
-        });
-    </script>
+    <!-- Подключаем JavaScript файлы -->
+    <script src="storage.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
