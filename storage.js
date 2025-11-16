@@ -1,6 +1,7 @@
 // storage.js - Функции для работы с локальным хранилищем
 
 const STORAGE_KEY = 'attendance_db';
+const BACKUP_KEY = 'attendance_backup';
 
 // Сохранить все данные
 function saveData(data) {
@@ -41,6 +42,96 @@ function loadData() {
         },
         attendance: {} // { "2024-01-15": { "1": true, "2": false, ... } }
     };
+}
+
+// Валидация структуры данных
+function isValidDataStructure(data) {
+    if (!data || typeof data !== 'object') {
+        return false;
+    }
+    
+    // Проверяем наличие обязательных полей
+    if (!data.groups || typeof data.groups !== 'object') {
+        return false;
+    }
+    
+    if (!data.attendance || typeof data.attendance !== 'object') {
+        return false;
+    }
+    
+    // Проверяем структуру групп
+    for (const groupName in data.groups) {
+        if (!Array.isArray(data.groups[groupName])) {
+            return false;
+        }
+        
+        // Проверяем структуру студентов в группе
+        for (const student of data.groups[groupName]) {
+            if (!student.id || !student.name || typeof student.id !== 'number' || typeof student.name !== 'string') {
+                return false;
+            }
+        }
+    }
+    
+    // Проверяем структуру посещаемости
+    for (const date in data.attendance) {
+        const dayAttendance = data.attendance[date];
+        if (typeof dayAttendance !== 'object') {
+            return false;
+        }
+        
+        // Проверяем, что значения - boolean или null
+        for (const studentId in dayAttendance) {
+            const value = dayAttendance[studentId];
+            if (value !== true && value !== false && value !== null) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Создать резервную копию
+function createBackup() {
+    try {
+        const currentData = loadData();
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(currentData));
+        console.log('Резервная копия создана');
+        return true;
+    } catch (error) {
+        console.error('Ошибка создания резервной копии:', error);
+        return false;
+    }
+}
+
+// Восстановить из резервной копии
+function restoreFromBackup() {
+    try {
+        const backupData = localStorage.getItem(BACKUP_KEY);
+        if (backupData) {
+            const data = JSON.parse(backupData);
+            if (isValidDataStructure(data)) {
+                saveData(data);
+                console.log('Данные восстановлены из резервной копии');
+                return true;
+            }
+        }
+        return false;
+    } catch (error) {
+        console.error('Ошибка восстановления из резервной копии:', error);
+        return false;
+    }
+}
+
+// Удалить резервную копию
+function removeBackup() {
+    try {
+        localStorage.removeItem(BACKUP_KEY);
+        console.log('Резервная копия удалена');
+    } catch (error) {
+        console.error('Ошибка удаления резервной копии:', error);
+    }
 }
 
 // Сохранить посещаемость для даты
@@ -224,53 +315,150 @@ function exportData() {
     showNotification('Данные экспортированы!', 'success');
 }
 
-// Импорт данных из файла
+// Импорт данных из файла (УЛУЧШЕННАЯ ВЕРСИЯ)
 function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
     
+    // Проверяем тип файла
+    if (!file.name.endsWith('.json')) {
+        showNotification('Ошибка: файл должен быть в формате JSON', 'error');
+        event.target.value = '';
+        return;
+    }
+    
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const data = JSON.parse(e.target.result);
+            const importedData = JSON.parse(e.target.result);
             
-            // Простая валидация структуры данных
-            if (!data.groups || typeof data.groups !== 'object') {
-                throw new Error('Неверный формат файла: отсутствует groups');
+            // СОЗДАЕМ РЕЗЕРВНУЮ КОПИЮ ПЕРЕД ИМПОРТОМ
+            if (!createBackup()) {
+                showNotification('Ошибка: не удалось создать резервную копию', 'error');
+                return;
             }
             
-            if (!data.attendance || typeof data.attendance !== 'object') {
-                throw new Error('Неверный формат файла: отсутствует attendance');
+            // ПРОВЕРЯЕМ СТРУКТУРУ ДАННЫХ
+            if (!isValidDataStructure(importedData)) {
+                throw new Error('Неверная структура данных в файле');
             }
             
-            if (saveData(data)) {
+            // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: есть ли хотя бы одна группа с студентами
+            const groupNames = Object.keys(importedData.groups);
+            if (groupNames.length === 0) {
+                throw new Error('В файле нет ни одной группы');
+            }
+            
+            let hasStudents = false;
+            for (const groupName of groupNames) {
+                if (importedData.groups[groupName].length > 0) {
+                    hasStudents = true;
+                    break;
+                }
+            }
+            
+            if (!hasStudents) {
+                throw new Error('В файле нет ни одного студента');
+            }
+            
+            // ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ - СОХРАНЯЕМ ДАННЫЕ
+            if (saveData(importedData)) {
+                removeBackup(); // Удаляем резервную копию при успешном импорте
+                updateGroupSelector();
+                updateAttendanceList();
                 showNotification('Данные успешно импортированы!', 'success');
             } else {
-                showNotification('Ошибка при сохранении данных', 'error');
+                throw new Error('Ошибка при сохранении данных');
             }
+            
         } catch (error) {
             console.error('Ошибка импорта:', error);
-            showNotification('Ошибка при импорте файла: ' + error.message, 'error');
+            
+            // ВОССТАНАВЛИВАЕМ ДАННЫЕ ИЗ РЕЗЕРВНОЙ КОПИИ
+            if (restoreFromBackup()) {
+                showNotification(`Ошибка импорта: ${error.message}. Данные восстановлены из резервной копии.`, 'error');
+            } else {
+                showNotification(`Критическая ошибка импорта: ${error.message}. Не удалось восстановить данные.`, 'error');
+            }
+            
+            // Все равно удаляем резервную копию чтобы не занимать место
+            removeBackup();
         }
     };
+    
+    reader.onerror = function() {
+        showNotification('Ошибка чтения файла', 'error');
+        event.target.value = '';
+    };
+    
     reader.readAsText(file);
     
     // Сбрасываем input чтобы можно было загрузить тот же файл снова
     event.target.value = '';
 }
 
+// Проверить целостность данных
+function checkDataIntegrity() {
+    const data = loadData();
+    
+    if (!isValidDataStructure(data)) {
+        console.error('Обнаружено повреждение данных');
+        return false;
+    }
+    
+    // Проверяем, что все ID студентов в attendance существуют в группах
+    const allStudentIds = new Set();
+    for (const groupName in data.groups) {
+        data.groups[groupName].forEach(student => {
+            allStudentIds.add(student.id);
+        });
+    }
+    
+    for (const date in data.attendance) {
+        for (const studentId in data.attendance[date]) {
+            const id = parseInt(studentId);
+            if (!allStudentIds.has(id)) {
+                console.warn(`Обнаружена запись посещаемости для несуществующего студента ID: ${studentId} на дату ${date}`);
+                // Можно автоматически очистить такие записи
+                // delete data.attendance[date][studentId];
+            }
+        }
+    }
+    
+    return true;
+}
+
 // Показать уведомление
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    // Создаем или находим контейнер для уведомлений
+    let notificationContainer = document.getElementById('notification-container');
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notification-container';
+        notificationContainer.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2';
+        document.body.appendChild(notificationContainer);
+    }
     
-    notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    const notification = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : 
+                   type === 'error' ? 'bg-red-500' : 
+                   'bg-blue-500';
+    
+    notification.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300`;
     notification.textContent = message;
     
-    document.body.appendChild(notification);
+    notificationContainer.appendChild(notification);
     
-    // Автоматически скрываем через 3 секунды
+    // Автоматически скрываем через 5 секунд
     setTimeout(() => {
-        notification.remove();
-    }, 3000);
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+            notification.remove();
+            // Удаляем контейнер если уведомлений больше нет
+            if (notificationContainer.children.length === 0) {
+                notificationContainer.remove();
+            }
+        }, 300);
+    }, 5000);
 }
