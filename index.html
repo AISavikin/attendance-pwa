@@ -58,22 +58,24 @@
         </header>
 
         <!-- Main Content -->
+        <!-- Main Content -->
         <main class="app-main">
             <div id="students-container" class="students-container">
                 <!-- Students will be dynamically inserted here -->
             </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button id="export-btn" class="btn btn-primary">
+                    📤 Экспорт данных
+                </button>
+                <label class="btn btn-success">
+                    📥 Импорт данных
+                    <input type="file" id="import-file" class="file-input" accept=".json">
+                </label>
+            </div>
         </main>
 
-        <!-- Control Buttons -->
-        <div class="control-buttons">
-            <button id="export-btn" class="btn btn-primary">
-                📤 Экспорт
-            </button>
-            <label class="btn btn-success">
-                📥 Импорт
-                <input type="file" id="import-file" class="file-input" accept=".json">
-            </label>
-        </div>
 
         <!-- Student Stats Modal -->
         <div id="student-stats-modal" class="modal-overlay">

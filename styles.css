@@ -211,15 +211,7 @@ body {
 .status-false { color: #f87171; }
 .status-null { color: var(--text-muted); }
 
-/* Кнопки управления */
-.control-buttons {
-    position: fixed;
-    bottom: 1rem;
-    left: 1rem;
-    display: flex;
-    gap: 0.5rem;
-    z-index: 50;
-}
+
 
 .btn {
     padding: 0.75rem 1rem;
@@ -913,4 +905,78 @@ body {
     /* Упрощенный дизайн для надежности */
     background: var(--bg-secondary) !important;
     box-shadow: var(--shadow-sm) !important;
+}
+
+/* ДОБАВИТЬ в styles.css для лучшего отображения на мобильных */
+.app-main {
+    flex: 1;
+    padding: 1rem;
+    max-width: 28rem;
+    margin: 0 auto;
+    width: 100%;
+    padding-bottom: 2rem; /* Добавляем отступ снизу */
+}
+
+/* Улучшаем отображение на очень маленьких экранах */
+@media (max-width: 360px) {
+    .app-main {
+        padding: 0.5rem;
+        padding-bottom: 1.5rem;
+    }
+    
+    .action-buttons {
+        margin-top: 1rem;
+        padding: 0.75rem 0;
+    }
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border-primary);
+}
+
+.action-buttons .btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Адаптивность для кнопок */
+@media (max-width: 480px) {
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .action-buttons .btn {
+        flex: none;
+    }
+}
+
+/* ДОБАВИТЬ в styles.css для лучшего отображения на мобильных */
+.app-main {
+    flex: 1;
+    padding: 1rem;
+    max-width: 28rem;
+    margin: 0 auto;
+    width: 100%;
+    padding-bottom: 2rem; /* Добавляем отступ снизу */
+}
+
+/* Улучшаем отображение на очень маленьких экранах */
+@media (max-width: 360px) {
+    .app-main {
+        padding: 0.5rem;
+        padding-bottom: 1.5rem;
+    }
+    
+    .action-buttons {
+        margin-top: 1rem;
+        padding: 0.75rem 0;
+    }
 }

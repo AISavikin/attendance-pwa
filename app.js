@@ -253,12 +253,10 @@ function updateGroupSelector() {
 // Обработчики онлайн/оффлайн статуса
 function handleOnlineStatus() {
     document.getElementById('offline-indicator').classList.add('hidden');
-    showNotification('Соединение восстановлено', 'success');
 }
 
 function handleOfflineStatus() {
     document.getElementById('offline-indicator').classList.remove('hidden');
-    showNotification('Работаем в оффлайн-режиме', 'info');
 }
 
 // PWA Installation
