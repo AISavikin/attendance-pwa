@@ -6,7 +6,7 @@ const BACKUP_KEY = 'attendance_backup';
 // Колбэк для обновления UI после импорта данных
 let onDataImportedCallback = null;
 
-function setOnDataImported(callback) {
+function setOnDataImportedStorage(callback) {
     onDataImportedCallback = callback;
 }
 
@@ -210,30 +210,17 @@ function getNextStatus(studentId, date) {
 function getStudentStatsForMonth(studentId, year, month) {
     const data = loadData();
     const stats = {
-        totalDays: 0,
-        presentDays: 0,
-        absentDays: 0,
-        attendanceRate: 0,
         dailyRecords: [],
         month: `${year}-${month.toString().padStart(2, '0')}`
     };
     
-    // Собираем записи посещаемости для студента за указанный месяц
+    // Собираем только записи посещаемости
     Object.entries(data.attendance).forEach(([date, dayAttendance]) => {
         const recordYear = date.split('-')[0];
         const recordMonth = date.split('-')[1];
         
         if (recordYear === year.toString() && recordMonth === month.toString().padStart(2, '0')) {
             if (dayAttendance[studentId] !== undefined) {
-                stats.totalDays++;
-                
-                if (dayAttendance[studentId] === true) {
-                    stats.presentDays++;
-                } else if (dayAttendance[studentId] === false) {
-                    stats.absentDays++;
-                }
-                
-                // Добавляем запись за день
                 stats.dailyRecords.push({
                     date: date,
                     present: dayAttendance[studentId]
@@ -245,14 +232,8 @@ function getStudentStatsForMonth(studentId, year, month) {
     // Сортируем записи по дате (новые сначала)
     stats.dailyRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
     
-    // Рассчитываем процент посещаемости
-    if (stats.totalDays > 0) {
-        stats.attendanceRate = Math.round((stats.presentDays / stats.totalDays) * 100);
-    }
-    
     return stats;
 }
-
 // Получить список месяцев, для которых есть данные о студенте
 function getAvailableMonthsForStudent(studentId) {
     const data = loadData();

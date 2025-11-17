@@ -352,32 +352,6 @@ body {
     margin-bottom: 0.5rem;
 }
 
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-    margin: 1rem 0;
-}
-
-.stat-card {
-    background: var(--bg-primary);
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    text-align: center;
-    border: 1px solid var(--border-primary);
-}
-
-.stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
 .stat-present .stat-value { color: #4ade80; }
 .stat-absent .stat-value { color: #f87171; }
 .stat-rate .stat-value { color: var(--accent-primary); }
@@ -622,4 +596,308 @@ body {
 
 .w-full {
     width: 100%;
+}
+
+/* Стили для улучшенного поля ввода даты */
+.date-input-container {
+    position: relative;
+    cursor: pointer;
+}
+
+.date-display {
+    padding: 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: var(--transition);
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.date-display:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-tertiary);
+}
+
+.date-display:active {
+    transform: scale(0.98);
+}
+
+.date-input-hidden {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+/* Убедимся, что скрытый input захватывает клики */
+.date-input-hidden::-webkit-calendar-picker-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Улучшенные стили для сетки статистики */
+.grid {
+    display: grid;
+}
+
+.grid-cols-1 {
+    grid-template-columns: repeat(1, 1fr);
+}
+
+.grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.gap-3 {
+    gap: 0.75rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.space-y-4 > * + * {
+    margin-top: 1rem;
+}
+
+.space-y-2 > * + * {
+    margin-top: 0.5rem;
+}
+
+.space-y-1 > * + * {
+    margin-top: 0.25rem;
+}
+
+.max-h-40 {
+    max-height: 10rem;
+}
+
+.overflow-y-auto {
+    overflow-y: auto;
+}
+
+.p-2 {
+    padding: 0.5rem;
+}
+
+.p-3 {
+    padding: 0.75rem;
+}
+
+.py-6 {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+.mt-1 {
+    margin-top: 0.25rem;
+}
+
+.mb-3 {
+    margin-bottom: 0.75rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+.text-xs {
+    font-size: 0.75rem;
+}
+
+.text-xl {
+    font-size: 1.25rem;
+}
+
+.text-2xl {
+    font-size: 1.5rem;
+}
+
+.font-medium {
+    font-weight: 500;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.text-gray-600 {
+    color: var(--text-secondary);
+}
+
+.text-gray-700 {
+    color: var(--text-primary);
+}
+
+.text-gray-500 {
+    color: var(--text-muted);
+}
+
+.text-gray-800 {
+    color: var(--text-primary);
+}
+
+.text-green-600 {
+    color: #059669;
+}
+
+.text-green-800 {
+    color: #065f46;
+}
+
+.text-red-600 {
+    color: #dc2626;
+}
+
+.text-red-800 {
+    color: #991b1b;
+}
+
+.text-blue-600 {
+    color: #2563eb;
+}
+
+.text-blue-800 {
+    color: #1e40af;
+}
+
+.bg-green-50 {
+    background-color: rgba(5, 150, 105, 0.1);
+}
+
+.bg-red-50 {
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
+.bg-blue-50 {
+    background-color: rgba(37, 99, 235, 0.1);
+}
+
+.bg-gray-50 {
+    background-color: rgba(148, 163, 184, 0.1);
+}
+
+.bg-white {
+    background-color: var(--bg-primary);
+}
+
+.border-green-100 {
+    border-color: rgba(5, 150, 105, 0.2);
+}
+
+.border-red-100 {
+    border-color: rgba(220, 38, 38, 0.2);
+}
+
+.border-blue-100 {
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.border-gray-200 {
+    border-color: var(--border-primary);
+}
+
+.border-gray-100 {
+    border-color: var(--border-primary);
+}
+
+.rounded-lg {
+    border-radius: var(--radius-lg);
+}
+
+.rounded {
+    border-radius: var(--radius-md);
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.flex {
+    display: flex;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.items-center {
+    align-items: center;
+}
+
+/* Адаптивность для очень маленьких экранов */
+@media (max-width: 480px) {
+    .date-display {
+        padding: 0.625rem;
+        font-size: 0.9rem;
+        min-height: 44px;
+    }
+    
+    .stats-grid-mobile {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Адаптивная сетка для статистики */
+@media (max-width: 360px) {
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Добавляем оптимизированные стили для списка записей */
+.modal-body {
+    padding: 1.25rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Улучшаем отображение списка записей */
+.space-y-3 > * + * {
+    margin-top: 0.75rem;
+}
+
+.max-h-60 {
+    max-height: 15rem;
+}
+
+.bg-gray-50 {
+    background: rgba(148, 163, 184, 0.1);
+}
+
+.border-gray-200 {
+    border-color: var(--border-primary);
+}
+
+.text-gray-700 {
+    color: var(--text-primary);
+}
+
+.text-gray-500 {
+    color: var(--text-muted);
 }

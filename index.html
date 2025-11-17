@@ -35,9 +35,12 @@
             <div class="header-content">
                 <h1 class="header-title">📊 Посещаемость</h1>
                 
-                <div class="form-group">
+                <div class="form-group date-input-container">
                     <label class="form-label">📅 Дата</label>
-                    <input type="date" id="date-selector" class="form-input">
+                    <div class="date-display" id="date-display">
+                        <!-- Дата будет отображаться здесь -->
+                    </div>
+                    <input type="date" id="date-selector" class="date-input-hidden">
                 </div>
 
                 <div class="form-group">
@@ -46,7 +49,8 @@
                         <!-- Группы будут загружены динамически -->
                     </select>
                 </div>
-                <!-- Добавить в header-content после формы -->
+
+                <!-- Кнопка установки PWA -->
                 <button id="installButton" class="btn btn-primary hidden mt-2">
                     📱 Установить приложение
                 </button>
@@ -81,28 +85,22 @@
                 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label">📅 Месяц</label>
+                        <label class="form-label">📅 Выберите месяц</label>
                         <select id="stats-month-selector" class="form-select">
                             <!-- Месяцы будут загружены динамически -->
                         </select>
                     </div>
                     
                     <div id="student-stats-content">
-                        <!-- Статистика будет загружена здесь -->
+                        <!-- Записи посещаемости будут загружены здесь -->
                     </div>
                 </div>
                 
                 <div class="modal-footer">
-                    <div class="month-navigation">
-                        <button id="prev-month-btn" class="nav-btn">← Предыдущий месяц</button>
-                        <button id="next-month-btn" class="nav-btn">Следующий месяц →</button>
-                    </div>
                     <button id="close-stats-btn" class="btn btn-primary w-full">Закрыть</button>
                 </div>
             </div>
         </div>
-    </div>
-
     <!-- Подключаем JavaScript файлы -->
     <script src="./storage.js"></script>
     <script src="./app.js"></script>

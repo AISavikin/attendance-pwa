@@ -1,9 +1,34 @@
-// app.js - Синхронная версия
+// app.js - Синхронная версия с улучшенным полем даты
 
 // Глобальные переменные для управления состоянием модального окна статистики
 let currentStudentId = null;
 let currentStatsMonth = null;
 let availableMonths = [];
+
+// Добавить эту функцию в app.js
+function setOnDataImported(callback) {
+    // Просто передаем колбэк в storage.js
+    if (typeof setOnDataImportedStorage === 'function') {
+        setOnDataImportedStorage(callback);
+    }
+}
+
+// Функция для обновления отображения даты
+function updateDateDisplay() {
+    const dateSelector = document.getElementById('date-selector');
+    const dateDisplay = document.getElementById('date-display');
+    
+    if (dateSelector.value) {
+        const date = new Date(dateSelector.value);
+        const formattedDate = date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            weekday: 'short'
+        });
+        dateDisplay.textContent = formattedDate;
+    }
+}
 
 // Основные функции приложения
 function updateAttendanceList() {
@@ -102,7 +127,7 @@ function openStudentStats(studentId) {
         return;
     }
     
-    // Устанавливаем текущий месяц (последний месяц с данными или текущий месяц)
+    // Устанавливаем текущий месяц
     const currentDate = new Date();
     const currentMonth = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
     currentStatsMonth = availableMonths.includes(currentMonth) ? currentMonth : availableMonths[0];
@@ -111,7 +136,7 @@ function openStudentStats(studentId) {
     updateMonthSelector();
     
     // Заполняем модальное окно
-    document.getElementById('student-stats-name').textContent = `Статистика: ${student.name}`;
+    document.getElementById('student-stats-name').textContent = student.name; // Только имя
     
     // Обновляем статистику для выбранного месяца
     updateStudentStatsDisplay();
@@ -119,7 +144,6 @@ function openStudentStats(studentId) {
     // Показываем модальное окно
     document.getElementById('student-stats-modal').style.display = 'block';
 }
-
 function updateMonthSelector() {
     const monthSelector = document.getElementById('stats-month-selector');
     monthSelector.innerHTML = '';
@@ -143,100 +167,32 @@ function updateStudentStatsDisplay() {
     const student = getStudentById(currentStudentId);
     
     const content = document.getElementById('student-stats-content');
-    content.innerHTML = `
-        <div class="space-y-4">
-            <div class="text-sm text-gray-600 space-y-1">
-                <p class="truncate"><span class="font-medium">Группа:</span> ${student.group}</p>
-                <p><span class="font-medium">Месяц:</span> ${formatMonthForDisplay(currentStatsMonth)}</p>
-            </div>
-            
-            <!-- Адаптивная сетка статистики -->
-            <div class="grid grid-cols-1 xs:grid-cols-3 gap-3 text-center">
-                <div class="bg-green-50 p-3 rounded-lg border border-green-100">
-                    <div class="text-xl xs:text-2xl font-bold text-green-600">${stats.presentDays}</div>
-                    <div class="text-xs xs:text-sm text-green-800 mt-1">Присутствовал</div>
-                </div>
-                <div class="bg-red-50 p-3 rounded-lg border border-red-100">
-                    <div class="text-xl xs:text-2xl font-bold text-red-600">${stats.absentDays}</div>
-                    <div class="text-xs xs:text-sm text-red-800 mt-1">Отсутствовал</div>
-                </div>
-                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <div class="text-xl xs:text-2xl font-bold text-blue-600">${stats.attendanceRate}%</div>
-                    <div class="text-xs xs:text-sm text-blue-800 mt-1">Посещаемость</div>
+    
+    if (stats.dailyRecords.length > 0) {
+        content.innerHTML = `
+            <div class="space-y-3 mt-4">
+                <h4 class="font-medium text-gray-800">Записи посещаемости:</h4>
+                <div class="space-y-2 max-h-60 overflow-y-auto">
+                    ${stats.dailyRecords.map(record => `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <span class="text-sm font-medium text-gray-700">${formatDate(record.date)}</span>
+                            <span class="${record.present ? 'text-green-600' : 'text-red-600'} text-sm font-medium">
+                                ${record.present ? '✅ Присутствовал' : '❌ Отсутствовал'}
+                            </span>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
-            
-            ${stats.dailyRecords.length > 0 ? `
-                <div>
-                    <h4 class="font-medium mb-3 text-gray-800">Записи за месяц:</h4>
-                    <div class="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
-                        ${stats.dailyRecords.map(record => `
-                            <div class="flex justify-between items-center p-2 bg-white rounded border border-gray-100">
-                                <span class="text-sm text-gray-700">${formatDate(record.date)}</span>
-                                <span class="${record.present ? 'text-green-600' : 'text-red-600'} text-sm font-medium">
-                                    ${record.present ? '✅ Присутствовал' : '❌ Отсутствовал'}
-                                </span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : `
-                <div class="text-center py-6 bg-gray-50 rounded-lg border border-gray-200">
-                    <p class="text-gray-500 text-sm">Нет записей о посещаемости за этот месяц</p>
-                </div>
-            `}
-        </div>
-    `;
-    
-    // Обновляем состояние кнопок навигации
-    updateNavigationButtons();
-}
-
-function updateNavigationButtons() {
-    const currentIndex = availableMonths.indexOf(currentStatsMonth);
-    const prevBtn = document.getElementById('prev-month-btn');
-    const nextBtn = document.getElementById('next-month-btn');
-    
-    // Предыдущий месяц
-    if (currentIndex < availableMonths.length - 1) {
-        prevBtn.disabled = false;
-        prevBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
-        prevBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
+        `;
     } else {
-        prevBtn.disabled = true;
-        prevBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600');
-        prevBtn.classList.add('bg-gray-300', 'cursor-not-allowed');
-    }
-    
-    // Следующий месяц
-    if (currentIndex > 0) {
-        nextBtn.disabled = false;
-        nextBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
-        nextBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
-    } else {
-        nextBtn.disabled = true;
-        nextBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600');
-        nextBtn.classList.add('bg-gray-300', 'cursor-not-allowed');
+        content.innerHTML = `
+            <div class="text-center py-8 bg-gray-50 rounded-lg border border-gray-200 mt-4">
+                <p class="text-gray-500 text-sm">Нет записей о посещаемости за этот месяц</p>
+            </div>
+        `;
     }
 }
 
-function navigateToPrevMonth() {
-    const currentIndex = availableMonths.indexOf(currentStatsMonth);
-    if (currentIndex < availableMonths.length - 1) {
-        currentStatsMonth = availableMonths[currentIndex + 1];
-        updateMonthSelector();
-        updateStudentStatsDisplay();
-    }
-}
-
-function navigateToNextMonth() {
-    const currentIndex = availableMonths.indexOf(currentStatsMonth);
-    if (currentIndex > 0) {
-        currentStatsMonth = availableMonths[currentIndex - 1];
-        updateMonthSelector();
-        updateStudentStatsDisplay();
-    }
-}
 
 function closeStudentStats() {
     document.getElementById('student-stats-modal').style.display = 'none';
@@ -319,7 +275,7 @@ function initializePWA() {
         console.log('✅ beforeinstallprompt event fired');
         e.preventDefault();
         deferredPrompt = e;
-        installButton.style.display = 'block';
+        installButton.classList.remove('hidden');
     });
 
     installButton.addEventListener('click', async () => {
@@ -331,7 +287,7 @@ function initializePWA() {
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`User response: ${outcome}`);
             deferredPrompt = null;
-            installButton.style.display = 'none';
+            installButton.classList.add('hidden');
         } else {
             console.log('❌ No deferred prompt available');
             showNotification('Для установки используйте иконку в адресной строке браузера', 'info');
@@ -341,7 +297,7 @@ function initializePWA() {
     window.addEventListener('appinstalled', () => {
         console.log('🎉 PWA was installed');
         if (installButton) {
-            installButton.style.display = 'none';
+            installButton.classList.add('hidden');
         }
     });
 }
@@ -360,6 +316,9 @@ function initializeApp() {
         const today = new Date().toISOString().split('T')[0];
         dateSelector.value = today;
         
+        // Обновляем отображение даты
+        updateDateDisplay();
+        
         // Устанавливаем колбэк для обновления UI после импорта данных
         setOnDataImported(() => {
             updateGroupSelector();
@@ -370,7 +329,11 @@ function initializeApp() {
         updateGroupSelector();
         
         // Назначаем обработчики событий
-        dateSelector.addEventListener('change', updateAttendanceList);
+        dateSelector.addEventListener('change', function() {
+            updateDateDisplay();
+            updateAttendanceList();
+        });
+        
         document.getElementById('group-selector').addEventListener('change', updateAttendanceList);
         document.getElementById('export-btn').addEventListener('click', exportData);
         document.getElementById('import-file').addEventListener('change', importData);
@@ -389,10 +352,7 @@ function initializeApp() {
             currentStatsMonth = this.value;
             updateStudentStatsDisplay();
         });
-        
-        document.getElementById('prev-month-btn').addEventListener('click', navigateToPrevMonth);
-        document.getElementById('next-month-btn').addEventListener('click', navigateToNextMonth);
-        
+       
         // Закрытие модального окна по клавише Escape
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
