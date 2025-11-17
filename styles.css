@@ -1,4 +1,4 @@
-/* styles.css - Тёмная тема с современным дизайном */
+/* styles.css - Очищенная версия */
 
 /* Базовые сбросы и настройки */
 * {
@@ -111,6 +111,7 @@ body {
     max-width: 28rem;
     margin: 0 auto;
     width: 100%;
+    padding-bottom: 2rem;
 }
 
 .students-container {
@@ -119,7 +120,7 @@ body {
     gap: 0.75rem;
 }
 
-/* Стили карточек студентов - Современный дизайн */
+/* Стили карточек студентов */
 .student-card {
     background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
     border: none;
@@ -211,8 +212,7 @@ body {
 .status-false { color: #f87171; }
 .status-null { color: var(--text-muted); }
 
-
-
+/* Кнопки */
 .btn {
     padding: 0.75rem 1rem;
     border: none;
@@ -256,6 +256,22 @@ body {
     opacity: 0;
     width: 0;
     height: 0;
+}
+
+/* Кнопки действий */
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border-primary);
+}
+
+.action-buttons .btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
 }
 
 /* Модальное окно */
@@ -325,6 +341,7 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 1.25rem;
+    max-height: 70vh;
 }
 
 .modal-footer {
@@ -337,16 +354,6 @@ body {
 .stats-section {
     margin-bottom: 1.5rem;
 }
-
-.stats-group {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-}
-
-.stat-present .stat-value { color: #4ade80; }
-.stat-absent .stat-value { color: #f87171; }
-.stat-rate .stat-value { color: var(--accent-primary); }
 
 .records-list {
     max-height: 200px;
@@ -380,35 +387,6 @@ body {
 
 .record-present { color: #4ade80; }
 .record-absent { color: #f87171; }
-
-/* Навигация по месяцам */
-.month-navigation {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.nav-btn {
-    flex: 1;
-    padding: 0.75rem;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    color: var(--text-primary);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: var(--transition);
-    font-size: 0.875rem;
-}
-
-.nav-btn:hover:not(:disabled) {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-}
-
-.nav-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
 
 /* Уведомления */
 .notification-container {
@@ -507,16 +485,6 @@ body {
         padding: 0.75rem;
     }
     
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-    }
-    
-    .control-buttons {
-        bottom: 0.75rem;
-        left: 0.75rem;
-    }
-    
     .btn {
         padding: 0.625rem 0.875rem;
         font-size: 0.8rem;
@@ -524,10 +492,6 @@ body {
     
     .modal-overlay {
         padding: 0.75rem;
-    }
-    
-    .month-navigation {
-        flex-direction: column;
     }
 }
 
@@ -546,6 +510,28 @@ body {
     
     .modal-content {
         max-height: 95vh;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .action-buttons .btn {
+        flex: none;
+    }
+}
+
+@media (max-width: 360px) {
+    .app-main {
+        padding: 0.5rem;
+        padding-bottom: 1.5rem;
+    }
+    
+    .action-buttons {
+        margin-top: 1rem;
+        padding: 0.75rem 0;
     }
 }
 
@@ -642,341 +628,13 @@ body {
     cursor: pointer;
 }
 
-/* Улучшенные стили для сетки статистики */
-.grid {
-    display: grid;
-}
-
-.grid-cols-1 {
-    grid-template-columns: repeat(1, 1fr);
-}
-
-.grid-cols-3 {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.gap-3 {
-    gap: 0.75rem;
-}
-
-.text-center {
-    text-align: center;
-}
-
-.space-y-4 > * + * {
-    margin-top: 1rem;
-}
-
-.space-y-2 > * + * {
-    margin-top: 0.5rem;
-}
-
-.space-y-1 > * + * {
-    margin-top: 0.25rem;
-}
-
-.max-h-40 {
-    max-height: 10rem;
-}
-
-.overflow-y-auto {
-    overflow-y: auto;
-}
-
-.p-2 {
-    padding: 0.5rem;
-}
-
-.p-3 {
-    padding: 0.75rem;
-}
-
-.py-6 {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-}
-
-.mt-1 {
-    margin-top: 0.25rem;
-}
-
-.mb-3 {
-    margin-bottom: 0.75rem;
-}
-
-.mt-2 {
-    margin-top: 0.5rem;
-}
-
-.w-full {
-    width: 100%;
-}
-
-.text-sm {
-    font-size: 0.875rem;
-}
-
-.text-xs {
-    font-size: 0.75rem;
-}
-
-.text-xl {
-    font-size: 1.25rem;
-}
-
-.text-2xl {
-    font-size: 1.5rem;
-}
-
-.font-medium {
-    font-weight: 500;
-}
-
-.font-bold {
-    font-weight: 700;
-}
-
-.text-gray-600 {
-    color: var(--text-secondary);
-}
-
-.text-gray-700 {
-    color: var(--text-primary);
-}
-
-.text-gray-500 {
-    color: var(--text-muted);
-}
-
-.text-gray-800 {
-    color: var(--text-primary);
-}
-
-.text-green-600 {
-    color: #059669;
-}
-
-.text-green-800 {
-    color: #065f46;
-}
-
-.text-red-600 {
-    color: #dc2626;
-}
-
-.text-red-800 {
-    color: #991b1b;
-}
-
-.text-blue-600 {
-    color: #2563eb;
-}
-
-.text-blue-800 {
-    color: #1e40af;
-}
-
-.bg-green-50 {
-    background-color: rgba(5, 150, 105, 0.1);
-}
-
-.bg-red-50 {
-    background-color: rgba(220, 38, 38, 0.1);
-}
-
-.bg-blue-50 {
-    background-color: rgba(37, 99, 235, 0.1);
-}
-
-.bg-gray-50 {
-    background-color: rgba(148, 163, 184, 0.1);
-}
-
-.bg-white {
-    background-color: var(--bg-primary);
-}
-
-.border-green-100 {
-    border-color: rgba(5, 150, 105, 0.2);
-}
-
-.border-red-100 {
-    border-color: rgba(220, 38, 38, 0.2);
-}
-
-.border-blue-100 {
-    border-color: rgba(37, 99, 235, 0.2);
-}
-
-.border-gray-200 {
-    border-color: var(--border-primary);
-}
-
-.border-gray-100 {
-    border-color: var(--border-primary);
-}
-
-.rounded-lg {
-    border-radius: var(--radius-lg);
-}
-
-.rounded {
-    border-radius: var(--radius-md);
-}
-
-.truncate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.flex {
-    display: flex;
-}
-
-.justify-between {
-    justify-content: space-between;
-}
-
-.items-center {
-    align-items: center;
-}
-
-/* Адаптивность для очень маленьких экранов */
-@media (max-width: 480px) {
-    .date-display {
-        padding: 0.625rem;
-        font-size: 0.9rem;
-        min-height: 44px;
-    }
-    
-    .stats-grid-mobile {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Адаптивная сетка для статистики */
-@media (max-width: 360px) {
-    .grid-cols-3 {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Добавляем оптимизированные стили для списка записей */
-.modal-body {
-    padding: 1.25rem;
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-/* Улучшаем отображение списка записей */
-.space-y-3 > * + * {
-    margin-top: 0.75rem;
-}
-
-.max-h-60 {
-    max-height: 15rem;
-}
-
-.bg-gray-50 {
-    background: rgba(148, 163, 184, 0.1);
-}
-
-.border-gray-200 {
-    border-color: var(--border-primary);
-}
-
-.text-gray-700 {
-    color: var(--text-primary);
-}
-
-.text-gray-500 {
-    color: var(--text-muted);
-}
-
-/* В styles.css добавить */
+/* Упрощенные стили для оффлайн-режима */
 .offline-optimized {
-    /* Упрощенные анимации для оффлайн-режима */
     animation: none !important;
     transition: none !important;
 }
 
 .offline-mode .student-card {
-    /* Упрощенный дизайн для надежности */
     background: var(--bg-secondary) !important;
     box-shadow: var(--shadow-sm) !important;
-}
-
-/* ДОБАВИТЬ в styles.css для лучшего отображения на мобильных */
-.app-main {
-    flex: 1;
-    padding: 1rem;
-    max-width: 28rem;
-    margin: 0 auto;
-    width: 100%;
-    padding-bottom: 2rem; /* Добавляем отступ снизу */
-}
-
-/* Улучшаем отображение на очень маленьких экранах */
-@media (max-width: 360px) {
-    .app-main {
-        padding: 0.5rem;
-        padding-bottom: 1.5rem;
-    }
-    
-    .action-buttons {
-        margin-top: 1rem;
-        padding: 0.75rem 0;
-    }
-}
-
-.action-buttons {
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 2rem;
-    padding: 1rem 0;
-    border-top: 1px solid var(--border-primary);
-}
-
-.action-buttons .btn {
-    flex: 1;
-    justify-content: center;
-    padding: 0.875rem 1rem;
-    font-size: 0.9rem;
-}
-
-/* Адаптивность для кнопок */
-@media (max-width: 480px) {
-    .action-buttons {
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-top: 1.5rem;
-    }
-    
-    .action-buttons .btn {
-        flex: none;
-    }
-}
-
-/* ДОБАВИТЬ в styles.css для лучшего отображения на мобильных */
-.app-main {
-    flex: 1;
-    padding: 1rem;
-    max-width: 28rem;
-    margin: 0 auto;
-    width: 100%;
-    padding-bottom: 2rem; /* Добавляем отступ снизу */
-}
-
-/* Улучшаем отображение на очень маленьких экранах */
-@media (max-width: 360px) {
-    .app-main {
-        padding: 0.5rem;
-        padding-bottom: 1.5rem;
-    }
-    
-    .action-buttons {
-        margin-top: 1rem;
-        padding: 0.75rem 0;
-    }
 }

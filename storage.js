@@ -146,13 +146,27 @@ function createBackup() {
 }
 
 // Восстановить из резервной копии
+// ЗАМЕНИТЬ функцию restoreFromBackup в storage.js:
+
 function restoreFromBackup() {
     try {
-        const backupData = localStorage.getItem(BACKUP_KEY);
-        if (backupData) {
-            const data = JSON.parse(backupData);
-            if (isValidDataStructure(data)) {
-                saveData(data);
+        const backupDataStr = localStorage.getItem(BACKUP_KEY);
+        if (backupDataStr) {
+            const backupData = JSON.parse(backupDataStr);
+            
+            // Поддержка старого и нового формата резервных копий
+            let dataToRestore;
+            if (backupData.data && backupData.timestamp) {
+                // Новый формат: {data: ..., timestamp: ..., version: ...}
+                dataToRestore = backupData.data;
+            } else {
+                // Старый формат: просто данные
+                dataToRestore = backupData;
+            }
+            
+            if (isValidDataStructure(dataToRestore)) {
+                saveData(dataToRestore);
+                console.log('Данные восстановлены из резервной копии');
                 return true;
             }
         }

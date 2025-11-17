@@ -378,12 +378,6 @@ function setupAutoBackup() {
 }
 
 
-// function setupCrossTabSync() {
-//     // Функция уже определена в storage.js, просто вызываем ее
-//     if (typeof setupCrossTabSync === 'function') {
-//         setupCrossTabSync();
-//     }
-// }
 
 // Инициализация приложения
 function initializeApp() {
@@ -417,7 +411,10 @@ function initializeApp() {
         
         // Инициализируем селектор групп
         updateGroupSelector();
-        setupCrossTabSync();
+        
+        if (typeof setupCrossTabSync === 'function') {
+            setupCrossTabSync();
+        }
 
         // Назначаем обработчики событий
         dateSelector.addEventListener('change', function() {
