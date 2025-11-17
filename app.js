@@ -302,6 +302,91 @@ function initializePWA() {
     });
 }
 
+
+function setupBeforeUnload() {
+    let hasUnsavedChanges = false;
+    
+    // Сохраняем оригинальную функцию
+    const originalSaveAttendance = window.saveAttendance;
+    
+    // Отслеживать изменения посещаемости
+    window.saveAttendance = function(date, studentId, present) {
+        hasUnsavedChanges = true;
+        const result = originalSaveAttendance(date, studentId, present);
+        
+        // Сбрасываем флаг после успешного сохранения
+        if (result) {
+            setTimeout(() => {
+                hasUnsavedChanges = false;
+            }, 100);
+        }
+        
+        return result;
+    };
+    
+    window.addEventListener('beforeunload', (e) => {
+        if (hasUnsavedChanges) {
+            e.preventDefault();
+            e.returnValue = 'У вас есть несохраненные изменения. Вы уверены, что хотите уйти?';
+            return e.returnValue;
+        }
+    });
+}
+
+function setupAutoBackup() {
+    let changeCount = 0;
+    
+    // Сохраняем оригинальную функцию
+    const originalSaveData = window.saveData;
+    
+    // Создавать резервную копию каждые 24 часа
+    setInterval(() => {
+        if (navigator.onLine) {
+            createBackup();
+            console.log('Автоматическая резервная копия создана');
+        }
+    }, 24 * 60 * 60 * 1000);
+    
+    // Переопределяем saveData для отслеживания изменений
+    window.saveData = function(data) {
+        changeCount++;
+        
+        // Создавать резервную копию после 10 изменений
+        if (changeCount >= 10) {
+            if (createBackup()) {
+                console.log('Резервная копия создана после 10 изменений');
+                changeCount = 0;
+            }
+        }
+        
+        // Вызываем оригинальную функцию
+        return originalSaveData(data);
+    };
+    
+    // Резервная копия при закрытии вкладки (если были изменения)
+    window.addEventListener('beforeunload', () => {
+        if (changeCount > 0) {
+            createBackup();
+        }
+    });
+    
+    // Резервная копия при переходе в онлайн (если были оффлайн-изменения)
+    window.addEventListener('online', () => {
+        if (changeCount > 0) {
+            createBackup();
+            changeCount = 0;
+        }
+    });
+}
+
+
+function setupCrossTabSync() {
+    // Функция уже определена в storage.js, просто вызываем ее
+    if (typeof setupCrossTabSync === 'function') {
+        setupCrossTabSync();
+    }
+}
+
 // Инициализация приложения
 function initializeApp() {
     try {
@@ -318,6 +403,13 @@ function initializeApp() {
         
         // Обновляем отображение даты
         updateDateDisplay();
+
+        
+        checkPendingOperations();
+        checkStorageQuota();
+
+        setupAutoBackup();
+        setupBeforeUnload();
         
         // Устанавливаем колбэк для обновления UI после импорта данных
         setOnDataImported(() => {
@@ -327,7 +419,8 @@ function initializeApp() {
         
         // Инициализируем селектор групп
         updateGroupSelector();
-        
+        setupCrossTabSync();
+
         // Назначаем обработчики событий
         dateSelector.addEventListener('change', function() {
             updateDateDisplay();
@@ -399,6 +492,9 @@ function initializeApp() {
         showNotification('Ошибка загрузки приложения', 'error');
     }
 }
+
+// В app.js добавить
+
 
 // Инициализируем приложение когда DOM загружен
 document.addEventListener('DOMContentLoaded', initializeApp);

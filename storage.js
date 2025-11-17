@@ -127,10 +127,17 @@ function isValidDataStructure(data) {
 }
 
 // Создать резервную копию
+
 function createBackup() {
     try {
         const currentData = loadData();
-        localStorage.setItem(BACKUP_KEY, JSON.stringify(currentData));
+        const backupData = {
+            data: currentData,
+            timestamp: new Date().toISOString(),
+            version: '1.0'
+        };
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(backupData));
+        console.log('Резервная копия создана');
         return true;
     } catch (error) {
         console.error('Ошибка создания резервной копии:', error);
@@ -466,4 +473,62 @@ function showNotification(message, type = 'info') {
             notificationContainer.remove();
         }
     }, 5000);
+}
+
+
+let isOperationInProgress = false;
+
+function setOperationInProgress(status) {
+    isOperationInProgress = status;
+    // Сохранять в sessionStorage для восстановления после перезагрузки
+    sessionStorage.setItem('operationInProgress', status);
+}
+
+function checkPendingOperations() {
+    const wasOperationInProgress = sessionStorage.getItem('operationInProgress') === 'true';
+    if (wasOperationInProgress) {
+        showNotification('Обнаружена незавершенная операция. Проверьте целостность данных.', 'warning');
+        sessionStorage.removeItem('operationInProgress');
+    }
+}
+
+
+function setupCrossTabSync() {
+    window.addEventListener('storage', function(e) {
+        if (e.key === STORAGE_KEY && e.newValue !== e.oldValue) {
+            showNotification('Данные обновлены в другой вкладке', 'info');
+            if (onDataImportedCallback) {
+                onDataImportedCallback();
+            }
+        }
+    });
+}
+
+
+function checkStorageQuota() {
+    try {
+        const data = JSON.stringify(loadData());
+        if (data.length > 4.5 * 1024 * 1024) { // 4.5MB предупреждение
+            showNotification('Мало места в хранилище. Рекомендуется экспорт старых данных.', 'warning');
+            return false;
+        }
+        return true;
+    } catch (e) {
+        showNotification('Ошибка проверки хранилища', 'error');
+        return false;
+    }
+}
+
+function cleanupOldData() {
+    const data = loadData();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    
+    Object.keys(data.attendance).forEach(date => {
+        if (new Date(date) < oneYearAgo) {
+            delete data.attendance[date];
+        }
+    });
+    
+    saveData(data);
 }

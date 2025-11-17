@@ -31,10 +31,10 @@ self.addEventListener('install', (event) => {
 });
 
 // Активация Service Worker
+
 self.addEventListener('activate', (event) => {
     console.log('Service Worker: Активирован');
     
-    // Очищаем старые кэши
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
@@ -46,12 +46,21 @@ self.addEventListener('activate', (event) => {
                 })
             );
         }).then(() => {
-            // Берём под контроль все клиенты сразу
+            // Принудительно взять контроль над всеми клиентами
             return self.clients.claim();
+        }).then(() => {
+            // Уведомить все вкладки о готовности
+            self.clients.matchAll().then((clients) => {
+                clients.forEach((client) => {
+                    client.postMessage({
+                        type: 'SW_ACTIVATED',
+                        version: CACHE_NAME
+                    });
+                });
+            });
         })
     );
 });
-
 // Стратегия кэширования: Cache First, Fallback to Network
 self.addEventListener('fetch', (event) => {
     // Пропускаем не-GET запросы

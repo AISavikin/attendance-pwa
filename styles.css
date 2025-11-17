@@ -901,3 +901,16 @@ body {
 .text-gray-500 {
     color: var(--text-muted);
 }
+
+/* В styles.css добавить */
+.offline-optimized {
+    /* Упрощенные анимации для оффлайн-режима */
+    animation: none !important;
+    transition: none !important;
+}
+
+.offline-mode .student-card {
+    /* Упрощенный дизайн для надежности */
+    background: var(--bg-secondary) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
