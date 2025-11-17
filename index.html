@@ -1,199 +1,110 @@
-<!-- Точка сохранения -->
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📊 Отметка посещаемости</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Локальные стили -->
+    <link href="./styles.css" rel="stylesheet">
     
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#1e293b">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
-    
-    <style>
-        .student-card {
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .student-card:active {
-            transform: scale(0.98);
-        }
-        .present-true {
-            background-color: #dcfce7;
-            border-color: #22c55e;
-        }
-        .present-false {
-            background-color: #fee2e2;
-            border-color: #ef4444;
-        }
-        .present-null {
-            background-color: #f3f4f6;
-            border-color: #d1d5db;
-        }
-        
-        /* Стиль для кнопки установки PWA */
-        #installButton {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 50px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            z-index: 1000;
-            display: none;
-        }
-
-        /* УЛУЧШЕННЫЕ СТИЛИ ДЛЯ МОДАЛЬНОГО ОКНА */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            padding: 16px;
-            box-sizing: border-box;
-        }
-        .modal-content {
-            position: relative;
-            background: white;
-            border-radius: 12px;
-            max-height: 90vh;
-            overflow-y: auto;
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* Для очень маленьких экранов */
-        @media (max-width: 480px) {
-            .modal-overlay {
-                padding: 8px;
-            }
-            .modal-content {
-                border-radius: 8px;
-                max-height: 95vh;
-            }
-        }
-        
-        /* Для очень высоких экранов */
-        @media (min-height: 800px) {
-            .modal-content {
-                max-height: 80vh;
-            }
-        }
-    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Header with Group and Date Selectors -->
-    <div class="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div class="max-w-md mx-auto px-4 py-4">
-            <!-- Date Selector -->
-            <div class="mb-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">📅 Дата</label>
-                <input type="date" id="date-selector" 
-                       class="w-full p-2 border border-gray-300 rounded-lg bg-white">
-            </div>
+<body>
+    <div class="app-container">
+        <!-- Offline Indicator -->
+        <div id="offline-indicator" class="offline-indicator hidden">
+            ⚠️ Вы работаете в оффлайн-режиме
+        </div>
 
-            <!-- Group Selector -->
-            <div class="mb-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">👥 Группа</label>
-                <select id="group-selector" 
-                        class="w-full p-2 border border-gray-300 rounded-lg bg-white">
-                    <!-- Группы будут загружены динамически -->
-                </select>
+        <!-- Loading Overlay -->
+        <div id="app-loading" class="loading-overlay">
+            <div class="loading-content">
+                <div class="loading-spinner">📊</div>
+                <p class="text-muted">Загрузка приложения...</p>
             </div>
         </div>
-    </div>
 
-    <!-- Attendance Content -->
-    <div id="attendance-content" class="max-w-md mx-auto pb-8">
-        <!-- Students list will be loaded here -->
-        <div class="px-4 py-3">
-            <div class="space-y-2" id="students-container">
-                <!-- Students will be dynamically inserted here -->
-            </div>
-        </div>
-    </div>
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="header-title">📊 Посещаемость</h1>
+                
+                <div class="form-group">
+                    <label class="form-label">📅 Дата</label>
+                    <input type="date" id="date-selector" class="form-input">
+                </div>
 
-    <!-- Кнопки управления данными -->
-    <div class="fixed bottom-4 left-4 space-x-2">
-        <button id="export-btn" class="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm">
-            📤 Экспорт
-        </button>
-        <label class="bg-green-500 text-white px-3 py-2 rounded-lg text-sm cursor-pointer">
-            📥 Импорт
-            <input type="file" id="import-file" accept=".json" class="hidden">
-        </label>
-    </div>
-
-    <!-- PWA Install Button -->
-    <button id="installButton" aria-label="Install app">📲 Установить</button>
-
-    <!-- УЛУЧШЕННОЕ МОДАЛЬНОЕ ОКНО СТАТИСТИКИ СТУДЕНТА -->
-    <div id="student-stats-modal" class="modal-overlay">
-        <div class="modal-content">
-            <!-- Заголовок -->
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-12">
-                <h3 id="student-stats-name" class="text-lg font-bold text-gray-800 truncate pr-2">Статистика студента</h3>
-                <button id="close-stats-modal" class="text-gray-500 hover:text-gray-700 text-xl flex-shrink-0">
-                    ✕
-                </button>
-            </div>
-            
-            <!-- Контент с прокруткой -->
-            <div class="flex-1 overflow-y-auto p-4">
-                <!-- Селектор месяца -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">📅 Месяц</label>
-                    <select id="stats-month-selector" class="w-full p-3 border border-gray-300 rounded-lg bg-white text-base">
-                        <!-- Месяцы будут загружены динамически -->
+                <div class="form-group">
+                    <label class="form-label">👥 Группа</label>
+                    <select id="group-selector" class="form-select">
+                        <!-- Группы будут загружены динамически -->
                     </select>
                 </div>
-                
-                <!-- Контент статистики -->
-                <div id="student-stats-content">
-                    <!-- Статистика будет загружена здесь -->
-                </div>
+                <!-- Добавить в header-content после формы -->
+                <button id="installButton" class="btn btn-primary hidden mt-2">
+                    📱 Установить приложение
+                </button>
             </div>
-            
-            <!-- Кнопки навигации -->
-            <div class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-12">
-                <div class="flex flex-col sm:flex-row gap-2 mb-4">
-                    <button id="prev-month-btn" class="flex-1 bg-gray-500 text-white px-4 py-3 rounded-lg text-base font-medium disabled:bg-gray-300 disabled:cursor-not-allowed">
-                        ← Пред. месяц
-                    </button>
-                    <button id="next-month-btn" class="flex-1 bg-gray-500 text-white px-4 py-3 rounded-lg text-base font-medium disabled:bg-gray-300 disabled:cursor-not-allowed">
-                        След. месяц →
-                    </button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <div id="students-container" class="students-container">
+                <!-- Students will be dynamically inserted here -->
+            </div>
+        </main>
+
+        <!-- Control Buttons -->
+        <div class="control-buttons">
+            <button id="export-btn" class="btn btn-primary">
+                📤 Экспорт
+            </button>
+            <label class="btn btn-success">
+                📥 Импорт
+                <input type="file" id="import-file" class="file-input" accept=".json">
+            </label>
+        </div>
+
+        <!-- Student Stats Modal -->
+        <div id="student-stats-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="student-stats-name" class="modal-title">Статистика студента</h2>
+                    <button id="close-stats-modal" class="modal-close">✕</button>
                 </div>
                 
-                <div class="flex justify-end">
-                    <button id="close-stats-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg text-base font-medium hover:bg-blue-600">
-                        Закрыть
-                    </button>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">📅 Месяц</label>
+                        <select id="stats-month-selector" class="form-select">
+                            <!-- Месяцы будут загружены динамически -->
+                        </select>
+                    </div>
+                    
+                    <div id="student-stats-content">
+                        <!-- Статистика будет загружена здесь -->
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <div class="month-navigation">
+                        <button id="prev-month-btn" class="nav-btn">← Предыдущий месяц</button>
+                        <button id="next-month-btn" class="nav-btn">Следующий месяц →</button>
+                    </div>
+                    <button id="close-stats-btn" class="btn btn-primary w-full">Закрыть</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Подключаем JavaScript файлы -->
-    <script src="storage.js"></script>
-    <script src="app.js"></script>
+    <script src="./storage.js"></script>
+    <script src="./app.js"></script>
 </body>
 </html>

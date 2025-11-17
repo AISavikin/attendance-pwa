@@ -1,47 +1,84 @@
-// storage.js - Функции для работы с локальным хранилищем
+// storage.js - Синхронная версия без внешних зависимостей
 
 const STORAGE_KEY = 'attendance_db';
 const BACKUP_KEY = 'attendance_backup';
+
+// Колбэк для обновления UI после импорта данных
+let onDataImportedCallback = null;
+
+function setOnDataImported(callback) {
+    onDataImportedCallback = callback;
+}
 
 // Сохранить все данные
 function saveData(data) {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        console.log('Данные сохранены:', data);
+        console.log('Данные сохранены');
         return true;
     } catch (error) {
         console.error('Ошибка сохранения:', error);
-        return false;
+        // Пытаемся сохранить в sessionStorage как fallback
+        try {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            console.log('Данные сохранены в sessionStorage');
+            return true;
+        } catch (fallbackError) {
+            console.error('Ошибка сохранения в sessionStorage:', fallbackError);
+            return false;
+        }
     }
 }
 
 // Загрузить все данные
 function loadData() {
+    let data = null;
+    
+    // Пытаемся загрузить из localStorage
     try {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if (data) {
-            return JSON.parse(data);
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            data = JSON.parse(stored);
         }
     } catch (error) {
-        console.error('Ошибка загрузки:', error);
+        console.error('Ошибка загрузки из localStorage:', error);
     }
     
-    // Возвращаем структуру по умолчанию если данных нет
-    return {
-        groups: {
-            'Выдуманная група 1': [
-                { id: 1, name: 'Выдуманный Иван' },
-                { id: 2, name: 'Ненастоящая Мария' },
-                { id: 3, name: 'Липовый Алексей' }
-            ],
-            'Выдуманная група 2': [
-                { id: 4, name: 'фейковая Анна' },
-                { id: 5, name: 'Лже Дмитрий' },
-                { id: 6, name: 'Федорова Елена' }
-            ]
-        },
-        attendance: {} // { "2024-01-15": { "1": true, "2": false, ... } }
-    };
+    // Если в localStorage нет данных, пробуем sessionStorage
+    if (!data) {
+        try {
+            const stored = sessionStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                data = JSON.parse(stored);
+                console.log('Данные загружены из sessionStorage');
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки из sessionStorage:', error);
+        }
+    }
+    
+    // Если данных нет вообще, возвращаем структуру по умолчанию
+    if (!data) {
+        data = {
+            groups: {
+                'Группа 1': [
+                    { id: 1, name: 'Иванов Иван' },
+                    { id: 2, name: 'Петрова Мария' },
+                    { id: 3, name: 'Сидоров Алексей' }
+                ],
+                'Группа 2': [
+                    { id: 4, name: 'Козлова Анна' },
+                    { id: 5, name: 'Николаев Дмитрий' },
+                    { id: 6, name: 'Федорова Елена' }
+                ]
+            },
+            attendance: {}
+        };
+        // Сохраняем структуру по умолчанию
+        saveData(data);
+    }
+    
+    return data;
 }
 
 // Валидация структуры данных
@@ -50,7 +87,6 @@ function isValidDataStructure(data) {
         return false;
     }
     
-    // Проверяем наличие обязательных полей
     if (!data.groups || typeof data.groups !== 'object') {
         return false;
     }
@@ -65,7 +101,6 @@ function isValidDataStructure(data) {
             return false;
         }
         
-        // Проверяем структуру студентов в группе
         for (const student of data.groups[groupName]) {
             if (!student.id || !student.name || typeof student.id !== 'number' || typeof student.name !== 'string') {
                 return false;
@@ -80,7 +115,6 @@ function isValidDataStructure(data) {
             return false;
         }
         
-        // Проверяем, что значения - boolean или null
         for (const studentId in dayAttendance) {
             const value = dayAttendance[studentId];
             if (value !== true && value !== false && value !== null) {
@@ -97,7 +131,6 @@ function createBackup() {
     try {
         const currentData = loadData();
         localStorage.setItem(BACKUP_KEY, JSON.stringify(currentData));
-        console.log('Резервная копия создана');
         return true;
     } catch (error) {
         console.error('Ошибка создания резервной копии:', error);
@@ -113,7 +146,6 @@ function restoreFromBackup() {
             const data = JSON.parse(backupData);
             if (isValidDataStructure(data)) {
                 saveData(data);
-                console.log('Данные восстановлены из резервной копии');
                 return true;
             }
         }
@@ -128,7 +160,6 @@ function restoreFromBackup() {
 function removeBackup() {
     try {
         localStorage.removeItem(BACKUP_KEY);
-        console.log('Резервная копия удалена');
     } catch (error) {
         console.error('Ошибка удаления резервной копии:', error);
     }
@@ -315,7 +346,7 @@ function exportData() {
     showNotification('Данные экспортированы!', 'success');
 }
 
-// Импорт данных из файла (УЛУЧШЕННАЯ ВЕРСИЯ)
+// Импорт данных из файла
 function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -364,8 +395,12 @@ function importData(event) {
             // ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ - СОХРАНЯЕМ ДАННЫЕ
             if (saveData(importedData)) {
                 removeBackup(); // Удаляем резервную копию при успешном импорте
-                updateGroupSelector();
-                updateAttendanceList();
+                
+                // Вызываем колбэк для обновления UI
+                if (onDataImportedCallback) {
+                    onDataImportedCallback();
+                }
+                
                 showNotification('Данные успешно импортированы!', 'success');
             } else {
                 throw new Error('Ошибка при сохранении данных');
@@ -430,35 +465,24 @@ function checkDataIntegrity() {
 
 // Показать уведомление
 function showNotification(message, type = 'info') {
-    // Создаем или находим контейнер для уведомлений
     let notificationContainer = document.getElementById('notification-container');
     if (!notificationContainer) {
         notificationContainer = document.createElement('div');
         notificationContainer.id = 'notification-container';
-        notificationContainer.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2';
+        notificationContainer.className = 'notification-container';
         document.body.appendChild(notificationContainer);
     }
     
     const notification = document.createElement('div');
-    const bgColor = type === 'success' ? 'bg-green-500' : 
-                   type === 'error' ? 'bg-red-500' : 
-                   'bg-blue-500';
-    
-    notification.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300`;
+    notification.className = `notification ${type}`;
     notification.textContent = message;
     
     notificationContainer.appendChild(notification);
     
-    // Автоматически скрываем через 5 секунд
     setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateY(-10px)';
-        setTimeout(() => {
-            notification.remove();
-            // Удаляем контейнер если уведомлений больше нет
-            if (notificationContainer.children.length === 0) {
-                notificationContainer.remove();
-            }
-        }, 300);
+        notification.remove();
+        if (notificationContainer.children.length === 0) {
+            notificationContainer.remove();
+        }
     }, 5000);
 }

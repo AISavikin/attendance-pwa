@@ -1,4 +1,4 @@
-// app.js - Основная логика приложения
+// app.js - Синхронная версия
 
 // Глобальные переменные для управления состоянием модального окна статистики
 let currentStudentId = null;
@@ -18,7 +18,7 @@ function updateAttendanceList() {
     container.innerHTML = '';
     
     if (students.length === 0) {
-        container.innerHTML = '<div class="text-center text-gray-500 py-8">Нет студентов в группе</div>';
+        container.innerHTML = '<div class="text-center text-muted">Нет студентов в группе</div>';
         return;
     }
     
@@ -26,37 +26,33 @@ function updateAttendanceList() {
         const present = attendance[student.id] !== undefined ? attendance[student.id] : null;
         
         const studentCard = document.createElement('div');
-        studentCard.className = `student-card border-2 rounded-lg p-3 present-${present}`;
+        studentCard.className = `student-card present-${present}`;
         
         studentCard.innerHTML = `
-            <div class="flex justify-between items-center">
-                <span class="font-medium text-gray-800">${student.name}</span>
-                <div class="flex items-center space-x-2">
-                    <button class="student-stats-btn text-gray-400 hover:text-blue-500 transition-colors" 
-                            data-student-id="${student.id}">
-                        📊
-                    </button>
-                    <span class="text-2xl student-status">
-                        ${present === true ? '✅' : present === false ? '❌' : '⬜'}
-                    </span>
-                </div>
+            <span class="student-name">${student.name}</span>
+            <div class="student-info">
+                <button class="student-status-btn" data-student-id="${student.id}">
+                    📊
+                </button>
+                <span class="student-status status-${present}">
+                    ${present === true ? '✅' : present === false ? '❌' : '⬜'}
+                </span>
             </div>
         `;
         
         container.appendChild(studentCard);
         
-        // Добавляем обработчик клика на карточку (для отметки посещаемости)
+        // Добавляем обработчик клика на карточку
         studentCard.addEventListener('click', (e) => {
-            // Проверяем, не кликнули ли по кнопке статистики
-            if (!e.target.closest('.student-stats-btn')) {
+            if (!e.target.closest('.student-status-btn')) {
                 toggleAttendance(student.id, studentCard);
             }
         });
         
-        // Добавляем обработчик для кнопки статистики
-        const statsBtn = studentCard.querySelector('.student-stats-btn');
+        // Обработчик для кнопки статистики
+        const statsBtn = studentCard.querySelector('.student-status-btn');
         statsBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Предотвращаем срабатывание клика по карточке
+            e.stopPropagation();
             openStudentStats(student.id);
         });
     });
@@ -139,8 +135,6 @@ function updateMonthSelector() {
     });
 }
 
-// В функции updateStudentStatsDisplay в app.js заменим содержимое на:
-
 function updateStudentStatsDisplay() {
     if (!currentStudentId || !currentStatsMonth) return;
     
@@ -197,6 +191,7 @@ function updateStudentStatsDisplay() {
     // Обновляем состояние кнопок навигации
     updateNavigationButtons();
 }
+
 function updateNavigationButtons() {
     const currentIndex = availableMonths.indexOf(currentStatsMonth);
     const prevBtn = document.getElementById('prev-month-btn');
@@ -269,40 +264,6 @@ function formatMonthForDisplay(monthString) {
     });
 }
 
-// PWA Installation
-function initializePWA() {
-    let deferredPrompt;
-    const installButton = document.getElementById('installButton');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('✅ beforeinstallprompt event fired');
-        e.preventDefault();
-        deferredPrompt = e;
-        installButton.style.display = 'block';
-    });
-
-    installButton.addEventListener('click', async () => {
-        console.log('🔄 Install button clicked');
-        
-        if (deferredPrompt) {
-            console.log('🚀 Showing install prompt');
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response: ${outcome}`);
-            deferredPrompt = null;
-            installButton.style.display = 'none';
-        } else {
-            console.log('❌ No deferred prompt available');
-            showNotification('Для установки используйте иконку в адресной строке браузера', 'info');
-        }
-    });
-
-    window.addEventListener('appinstalled', () => {
-        console.log('🎉 PWA was installed');
-        installButton.style.display = 'none';
-    });
-}
-
 // Обновить список групп в селекторе
 function updateGroupSelector() {
     const groupNames = getGroupNames();
@@ -333,63 +294,151 @@ function updateGroupSelector() {
     console.log('Group selector updated with groups:', groupNames);
 }
 
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', function() {
-    // Устанавливаем сегодняшнюю дату по умолчанию
-    const dateSelector = document.getElementById('date-selector');
-    const today = new Date().toISOString().split('T')[0];
-    dateSelector.value = today;
-    
-    // Инициализируем селектор групп
-    updateGroupSelector();
-    
-    // Назначаем обработчики событий
-    dateSelector.addEventListener('change', updateAttendanceList);
-    document.getElementById('group-selector').addEventListener('change', updateAttendanceList);
-    document.getElementById('export-btn').addEventListener('click', exportData);
-    document.getElementById('import-file').addEventListener('change', importData);
-    
-    // Обработчики для модального окна статистики
-    document.getElementById('close-stats-modal').addEventListener('click', closeStudentStats);
-    document.getElementById('close-stats-btn').addEventListener('click', closeStudentStats);
-    document.getElementById('student-stats-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeStudentStats();
-        }
-    });
-    
-    // Обработчики для навигации по месяцам
-    document.getElementById('stats-month-selector').addEventListener('change', function() {
-        currentStatsMonth = this.value;
-        updateStudentStatsDisplay();
-    });
-    
-    document.getElementById('prev-month-btn').addEventListener('click', navigateToPrevMonth);
-    document.getElementById('next-month-btn').addEventListener('click', navigateToNextMonth);
-    
-    // Закрытие модального окна по клавише Escape
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeStudentStats();
-        }
-    });
-    
-    // Инициализируем PWA
-    initializePWA();
-    
-    // Регистрация Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-                console.log('SW registered: ', registration);
-            })
-            .catch(registrationError => {
-                console.log('SW registration failed: ', registrationError);
-            });
+// Обработчики онлайн/оффлайн статуса
+function handleOnlineStatus() {
+    document.getElementById('offline-indicator').classList.add('hidden');
+    showNotification('Соединение восстановлено', 'success');
+}
+
+function handleOfflineStatus() {
+    document.getElementById('offline-indicator').classList.remove('hidden');
+    showNotification('Работаем в оффлайн-режиме', 'info');
+}
+
+// PWA Installation
+function initializePWA() {
+    let deferredPrompt;
+    const installButton = document.getElementById('installButton');
+
+    if (!installButton) {
+        console.log('Кнопка установки не найдена в DOM');
+        return;
     }
-    
-    // Загружаем начальные данные
-    updateAttendanceList();
-    
-    console.log('Приложение инициализировано');
-});
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('✅ beforeinstallprompt event fired');
+        e.preventDefault();
+        deferredPrompt = e;
+        installButton.style.display = 'block';
+    });
+
+    installButton.addEventListener('click', async () => {
+        console.log('🔄 Install button clicked');
+        
+        if (deferredPrompt) {
+            console.log('🚀 Showing install prompt');
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response: ${outcome}`);
+            deferredPrompt = null;
+            installButton.style.display = 'none';
+        } else {
+            console.log('❌ No deferred prompt available');
+            showNotification('Для установки используйте иконку в адресной строке браузера', 'info');
+        }
+    });
+
+    window.addEventListener('appinstalled', () => {
+        console.log('🎉 PWA was installed');
+        if (installButton) {
+            installButton.style.display = 'none';
+        }
+    });
+}
+
+// Инициализация приложения
+function initializeApp() {
+    try {
+        // Скрываем индикатор загрузки
+        const loadingOverlay = document.getElementById('app-loading');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
+
+        // Устанавливаем сегодняшнюю дату по умолчанию
+        const dateSelector = document.getElementById('date-selector');
+        const today = new Date().toISOString().split('T')[0];
+        dateSelector.value = today;
+        
+        // Устанавливаем колбэк для обновления UI после импорта данных
+        setOnDataImported(() => {
+            updateGroupSelector();
+            updateAttendanceList();
+        });
+        
+        // Инициализируем селектор групп
+        updateGroupSelector();
+        
+        // Назначаем обработчики событий
+        dateSelector.addEventListener('change', updateAttendanceList);
+        document.getElementById('group-selector').addEventListener('change', updateAttendanceList);
+        document.getElementById('export-btn').addEventListener('click', exportData);
+        document.getElementById('import-file').addEventListener('change', importData);
+        
+        // Обработчики для модального окна статистики
+        document.getElementById('close-stats-modal').addEventListener('click', closeStudentStats);
+        document.getElementById('close-stats-btn').addEventListener('click', closeStudentStats);
+        document.getElementById('student-stats-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeStudentStats();
+            }
+        });
+        
+        // Обработчики для навигации по месяцам
+        document.getElementById('stats-month-selector').addEventListener('change', function() {
+            currentStatsMonth = this.value;
+            updateStudentStatsDisplay();
+        });
+        
+        document.getElementById('prev-month-btn').addEventListener('click', navigateToPrevMonth);
+        document.getElementById('next-month-btn').addEventListener('click', navigateToNextMonth);
+        
+        // Закрытие модального окна по клавише Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeStudentStats();
+            }
+        });
+        
+        // Мониторинг онлайн-статуса
+        window.addEventListener('online', handleOnlineStatus);
+        window.addEventListener('offline', handleOfflineStatus);
+        
+        // Проверяем начальный статус
+        if (!navigator.onLine) {
+            handleOfflineStatus();
+        }
+        
+        // Инициализируем PWA
+        initializePWA();
+        
+        // Регистрация Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('SW registered: ', registration);
+                })
+                .catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                    showNotification('Оффлайн-режим недоступен', 'error');
+                });
+        }
+        
+        // Проверяем целостность данных при загрузке
+        if (!checkDataIntegrity()) {
+            console.warn('Обнаружены проблемы с целостностью данных');
+        }
+        
+        // Загружаем начальные данные
+        updateAttendanceList();
+        
+        console.log('Приложение инициализировано');
+        
+    } catch (error) {
+        console.error('Ошибка инициализации приложения:', error);
+        showNotification('Ошибка загрузки приложения', 'error');
+    }
+}
+
+// Инициализируем приложение когда DOM загружен
+document.addEventListener('DOMContentLoaded', initializeApp);
