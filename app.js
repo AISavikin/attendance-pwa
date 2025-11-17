@@ -380,12 +380,12 @@ function setupAutoBackup() {
 }
 
 
-function setupCrossTabSync() {
-    // Функция уже определена в storage.js, просто вызываем ее
-    if (typeof setupCrossTabSync === 'function') {
-        setupCrossTabSync();
-    }
-}
+// function setupCrossTabSync() {
+//     // Функция уже определена в storage.js, просто вызываем ее
+//     if (typeof setupCrossTabSync === 'function') {
+//         setupCrossTabSync();
+//     }
+// }
 
 // Инициализация приложения
 function initializeApp() {
