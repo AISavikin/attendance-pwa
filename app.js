@@ -265,37 +265,60 @@ function updateScheduleDisplay() {
         dateDisplay.classList.add('non-study-day');
     }
 }
-
 /**
- * Открывает модальное окно настроек расписания
+ * Открывает модальное окно настроек
  */
-function openScheduleSettings() {
-    const schedule = getSchedule();
-    const checkboxes = document.querySelectorAll('.day-checkbox');
+function openSettingsModal() {
+    // Загружаем текущие настройки
+    loadCurrentSettings();
     
-    // Устанавливаем текущие значения
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = schedule.includes(parseInt(checkbox.value));
-    });
-    
-    document.getElementById('schedule-modal').style.display = 'block';
+    // Показываем модальное окно
+    document.getElementById('settings-modal').style.display = 'block';
 }
 
+/**
+ * Закрывает модальное окно настроек
+ */
+function closeSettingsModal() {
+    document.getElementById('settings-modal').style.display = 'none';
+}
+
+/**
+ * Загружает текущие настройки в форму
+ */
+/**
+ * Загружает текущие настройки в форму
+ */
+function loadCurrentSettings() {
+    // Загрузка текущего расписания
+    const schedule = getSchedule();
+    schedule.forEach(day => {
+        const checkbox = document.querySelector(`.day-checkbox[value="${day}"]`);
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+    });
+    
+    // Загрузка токена GitHub (если есть)
+    const githubToken = localStorage.getItem('github_token');
+    if (githubToken) {
+        document.getElementById('github-token').value = githubToken;
+        document.getElementById('github-status').innerHTML = '<span>✓</span><span>Токен GitHub настроен</span>';
+        document.getElementById('github-status').className = 'status-badge status-success';
+    } else {
+        document.getElementById('github-status').innerHTML = '<span>⚠</span><span>Токен GitHub не настроен</span>';
+        document.getElementById('github-status').className = 'status-badge status-error';
+    }
+}
 /**
  * Сохраняет настройки расписания
  */
 function saveScheduleSettings() {
-    const checkboxes = document.querySelectorAll('.day-checkbox:checked');
-    const selectedDays = Array.from(checkboxes).map(cb => parseInt(cb.value));
-    
-    if (selectedDays.length === 0) {
-        showNotification('Выберите хотя бы один учебный день', 'error');
-        return;
-    }
+    const selectedDays = Array.from(document.querySelectorAll('.day-checkbox:checked'))
+        .map(cb => parseInt(cb.value));
     
     if (saveSchedule(selectedDays)) {
         showNotification('Расписание сохранено', 'success');
-        closeScheduleModal();
         updateScheduleDisplay();
     } else {
         showNotification('Ошибка сохранения расписания', 'error');
@@ -303,12 +326,42 @@ function saveScheduleSettings() {
 }
 
 /**
- * Закрывает модальное окно расписания
+ * Создает резервную копию в GitHub (заглушка)
  */
-function closeScheduleModal() {
-    document.getElementById('schedule-modal').style.display = 'none';
+function createGithubBackup() {
+    // TODO: Реализовать логику создания бэкапа в GitHub
+    showNotification('Функция создания бэкапа в GitHub в разработке', 'info');
 }
 
+/**
+ * Восстанавливает из резервной копии в GitHub (заглушка)
+ */
+function restoreFromGithubBackup() {
+    // TODO: Реализовать логику восстановления из GitHub
+    showNotification('Функция восстановления из GitHub в разработке', 'info');
+}
+
+/**
+ * Сохраняет настройки GitHub (заглушка)
+ */
+function saveGithubSettings() {
+    const token = document.getElementById('github-token').value;
+    
+    if (token && token.trim() !== '') {
+        localStorage.setItem('github_token', token);
+        document.getElementById('github-status').innerHTML = '<span>✓</span><span>Токен GitHub настроен</span>';
+        document.getElementById('github-status').className = 'status-badge status-success';
+        showNotification('Настройки GitHub сохранены', 'success');
+        
+        // TODO: Добавить проверку валидности токена через GitHub API
+        // TODO: Настроить автоматическую синхронизацию
+    } else {
+        localStorage.removeItem('github_token');
+        document.getElementById('github-status').innerHTML = '<span>⚠</span><span>Токен GitHub не настроен</span>';
+        document.getElementById('github-status').className = 'status-badge status-error';
+        showNotification('Токен GitHub удален', 'info');
+    }
+}
 /**
  * ФУНКЦИИ ДЛЯ РАБОТЫ СО СТАТИСТИКОЙ СТУДЕНТА
  */
@@ -1016,8 +1069,6 @@ function initializeApp() {
         });
         
         document.getElementById('group-selector').addEventListener('change', updateAttendanceList);
-        document.getElementById('export-btn').addEventListener('click', exportData);
-        document.getElementById('import-file').addEventListener('change', importData);
         
         // Модальное окно статистики
         document.getElementById('close-stats-modal').addEventListener('click', closeStudentStats);
@@ -1028,11 +1079,25 @@ function initializeApp() {
             }
         });
         
-        // Модальное окно расписания
-        document.getElementById('schedule-settings-btn').addEventListener('click', openScheduleSettings);
-        document.getElementById('close-schedule-modal').addEventListener('click', closeScheduleModal);
-        document.getElementById('save-schedule-btn').addEventListener('click', saveScheduleSettings);
 
+        // Модальное окно настроек
+        document.getElementById('export-data-btn').addEventListener('click', exportData); 
+        document.getElementById('schedule-settings-btn').addEventListener('click', openSettingsModal);
+        document.getElementById('close-settings-modal').addEventListener('click', closeSettingsModal);
+        document.getElementById('close-settings-btn').addEventListener('click', closeSettingsModal);
+        document.getElementById('settings-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettingsModal();
+            }
+        });
+
+        // Кнопки в модальном окне настроек
+        document.getElementById('save-schedule-btn').addEventListener('click', saveScheduleSettings);
+        document.getElementById('import-file-settings').addEventListener('change', importData); // ← ИЗМЕНИТЬ ID
+        document.getElementById('save-schedule-btn').addEventListener('click', saveScheduleSettings);
+        document.getElementById('create-github-backup-btn').addEventListener('click', createGithubBackup);
+document.getElementById('restore-github-backup-btn').addEventListener('click', restoreFromGithubBackup);        document.getElementById('save-github-btn').addEventListener('click', saveGithubSettings);
+       
         // Навигация по месяцам в статистике
         document.getElementById('stats-month-selector').addEventListener('change', function() {
             currentStatsMonth = this.value;

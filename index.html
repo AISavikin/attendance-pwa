@@ -39,7 +39,7 @@
                             <button id="manage-groups-btn" class="btn-icon" title="Управление группами и студентами">
                                 👥
                             </button>
-                            <button id="schedule-settings-btn" class="btn-icon" title="Настройки расписания">
+                            <button id="schedule-settings-btn" class="btn-icon" title="Настройки">
                                 ⚙️
                             </button>
                         </div>
@@ -68,65 +68,91 @@
         </header>
 
         <!-- Main Content -->
-        <!-- Main Content -->
         <main class="app-main">
             <div id="students-container" class="students-container">
                 <!-- Students will be dynamically inserted here -->
             </div>
             
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button id="export-btn" class="btn btn-primary">
-                    📤 Экспорт данных
-                </button>
-                <label class="btn btn-success">
-                    📥 Импорт данных
-                    <input type="file" id="import-file" class="file-input" accept=".json">
-                </label>
-            </div>
         </main>
-        <!-- Modal for Schedule Settings -->
-        <div id="schedule-modal" class="modal-overlay">
+
+        <!-- Modal for Settings -->
+        <div id="settings-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title">📅 Настройка расписания</h2>
-                    <button id="close-schedule-modal" class="modal-close">✕</button>
+                    <h2 class="modal-title">⚙️ Настройки</h2>
+                    <button id="close-settings-modal" class="modal-close">✕</button>
                 </div>
                 
                 <div class="modal-body">
-                    <p class="text-muted mb-4">Выберите дни недели, в которые проходят занятия:</p>
+                    <!-- Локальный бекап -->
+                    <div class="settings-section">
+                        <h3 class="section-title">Локальный бекап</h3>
+                        
+                        <div class="backup-actions">
+                            <button id="export-data-btn" class="btn btn-secondary btn-sm">📤 Экспорт в JSON</button>
+                            <label class="btn btn-success btn-sm">
+                                📥 Импорт из JSON
+                                <input type="file" id="import-file-settings" class="file-input" accept=".json">
+                            </label>
+                        </div>
+                    </div>
                     
-                    <div class="schedule-days">
-                        <label class="schedule-day">
-                            <input type="checkbox" value="1" class="day-checkbox"> Понедельник
-                        </label>
-                        <label class="schedule-day">
-                            <input type="checkbox" value="2" class="day-checkbox"> Вторник
-                        </label>
-                        <label class="schedule-day">
-                            <input type="checkbox" value="3" class="day-checkbox"> Среда
-                        </label>
-                        <label class="schedule-day">
-                            <input type="checkbox" value="4" class="day-checkbox"> Четверг
-                        </label>
-                        <label class="schedule-day">
-                            <input type="checkbox" value="5" class="day-checkbox"> Пятница
-                        </label>
-                        <label class="schedule-day">
-                            <input type="checkbox" value="6" class="day-checkbox"> Суббота
-                        </label>
-                        <label class="schedule-day">
-                            <input type="checkbox" value="0" class="day-checkbox"> Воскресенье
-                        </label>
+                 <!-- GitHub синхронизация -->
+                    <div class="settings-section">
+                        <h3 class="section-title">GitHub синхронизация</h3>
+                        
+                        <div id="github-status" class="status-badge status-success">
+                            <span>✓</span>
+                            <span>Токен GitHub настроен</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">GitHub Personal Access Token</label>
+                            <input type="password" id="github-token" class="form-input" placeholder="Введите ваш токен">
+                            <p class="form-text">Токен должен иметь разрешения на доступ к репозиториям.</p>
+                        </div>
+                        
+                        <div class="backup-actions">
+                            <button id="save-github-btn" class="btn btn-secondary btn-sm">Сохранить настройки</button>
+                            <button id="create-github-backup-btn" class="btn btn-secondary btn-sm">Создать резервную копию</button>
+                            <button id="restore-github-backup-btn" class="btn btn-secondary btn-sm">Восстановить из резервной копии</button>
+                        </div>
+                    </div>
+                    <!-- Рабочие дни -->
+                    <div class="settings-section">
+                        <h3 class="section-title">Рабочие дни</h3>
+                        
+                        <p class="form-text">Выберите дни недели, в которые проходят занятия</p>
+                        
+                        <div class="days-grid">
+                            <input type="checkbox" id="monday" class="day-checkbox" value="1">
+                            <label for="monday" class="day-label">Пн</label>
+                            
+                            <input type="checkbox" id="tuesday" class="day-checkbox" value="2">
+                            <label for="tuesday" class="day-label">Вт</label>
+                            
+                            <input type="checkbox" id="wednesday" class="day-checkbox" value="3">
+                            <label for="wednesday" class="day-label">Ср</label>
+                            
+                            <input type="checkbox" id="thursday" class="day-checkbox" value="4">
+                            <label for="thursday" class="day-label">Чт</label>
+                            
+                            <input type="checkbox" id="friday" class="day-checkbox" value="5">
+                            <label for="friday" class="day-label">Пт</label>
+                            
+                            <input type="checkbox" id="saturday" class="day-checkbox" value="6">
+                            <label for="saturday" class="day-label">Сб</label>
+                        </div>
+                        
+                        <button id="save-schedule-btn" class="btn btn-sm" style="margin-top: 1rem;">Сохранить расписание</button>
                     </div>
                 </div>
                 
                 <div class="modal-footer">
-                    <button id="save-schedule-btn" class="btn btn-primary w-full">Сохранить расписание</button>
+                    <button id="close-settings-btn" class="btn btn-secondary">Закрыть</button>
                 </div>
             </div>
         </div>
-    
 
         <!-- Student Stats Modal -->
         <div id="student-stats-modal" class="modal-overlay">
