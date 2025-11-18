@@ -344,22 +344,135 @@ function restoreFromGithubBackup() {
 /**
  * Сохраняет настройки GitHub (заглушка)
  */
-function saveGithubSettings() {
-    const token = document.getElementById('github-token').value;
+/**
+ * Сохраняет настройки GitHub с проверкой валидности токена
+ */
+async function saveGithubSettings() {
+    const tokenInput = document.getElementById('github-token');
+    const token = tokenInput.value.trim();
+    const statusElement = document.getElementById('github-status');
+    const saveButton = document.getElementById('save-github-btn');
     
-    if (token && token.trim() !== '') {
-        localStorage.setItem('github_token', token);
-        document.getElementById('github-status').innerHTML = '<span>✓</span><span>Токен GitHub настроен</span>';
-        document.getElementById('github-status').className = 'status-badge status-success';
-        showNotification('Настройки GitHub сохранены', 'success');
+    // Сохраняем оригинальный текст кнопки
+    const originalButtonText = saveButton.textContent;
+    
+    if (token) {
+        // Показываем индикатор загрузки
+        saveButton.textContent = 'Проверка...';
+        saveButton.disabled = true;
         
-        // TODO: Добавить проверку валидности токена через GitHub API
-        // TODO: Настроить автоматическую синхронизацию
+        try {
+            // Проверяем валидность токена через GitHub API
+            const isValid = await validateGitHubToken(token);
+            
+            if (isValid) {
+                // Сохраняем токен
+                localStorage.setItem('github_token', token);
+                
+                // Обновляем статус
+                statusElement.innerHTML = '<span>✓</span><span>Токен GitHub настроен и проверен</span>';
+                statusElement.className = 'status-badge status-success';
+                
+                showNotification('Токен GitHub успешно сохранен и проверен', 'success');
+                
+                // TODO: Здесь можно добавить автоматическую синхронизацию при успешной настройке
+                // await createGithubBackup(); // Автоматически создаем первый бэкап
+                
+            } else {
+                // Токен невалидный
+                statusElement.innerHTML = '<span>❌</span><span>Неверный токен GitHub</span>';
+                statusElement.className = 'status-badge status-error';
+                
+                showNotification('Ошибка: Неверный токен GitHub', 'error');
+                
+                // Очищаем поле ввода
+                tokenInput.value = '';
+                localStorage.removeItem('github_token');
+            }
+            
+        } catch (error) {
+            console.error('Ошибка проверки токена GitHub:', error);
+            
+            statusElement.innerHTML = '<span>⚠</span><span>Ошибка проверки токена</span>';
+            statusElement.className = 'status-badge status-error';
+            
+            showNotification('Ошибка сети при проверке токена', 'error');
+        } finally {
+            // Восстанавливаем кнопку
+            saveButton.textContent = originalButtonText;
+            saveButton.disabled = false;
+        }
+        
     } else {
+        // Удаляем токен если поле пустое
         localStorage.removeItem('github_token');
-        document.getElementById('github-status').innerHTML = '<span>⚠</span><span>Токен GitHub не настроен</span>';
-        document.getElementById('github-status').className = 'status-badge status-error';
+        
+        statusElement.innerHTML = '<span>⚠</span><span>Токен GitHub не настроен</span>';
+        statusElement.className = 'status-badge status-error';
+        
         showNotification('Токен GitHub удален', 'info');
+    }
+}
+
+/**
+ * Проверяет валидность токена GitHub через API
+ * @param {string} token - GitHub Personal Access Token
+ * @returns {Promise<boolean>} true если токен валиден
+ */
+async function validateGitHubToken(token) {
+    try {
+        const response = await fetch('https://api.github.com/user', {
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Attendance-App' // GitHub требует User-Agent
+            }
+        });
+        
+        if (response.status === 200) {
+            const userData = await response.json();
+            console.log('GitHub токен валиден для пользователя:', userData.login);
+            return true;
+        } else if (response.status === 401) {
+            console.log('GitHub токен невалиден');
+            return false;
+        } else {
+            console.log('Неожиданный статус ответа GitHub:', response.status);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('Ошибка при проверке токена GitHub:', error);
+        throw error; // Пробрасываем ошибку для обработки в вызывающей функции
+    }
+}
+
+/**
+ * Проверяет наличие и валидность сохраненного токена GitHub при загрузке приложения
+ */
+async function checkExistingGitHubToken() {
+    const token = localStorage.getItem('github_token');
+    const statusElement = document.getElementById('github-status');
+    
+    if (token && statusElement) {
+        try {
+            const isValid = await validateGitHubToken(token);
+            
+            if (isValid) {
+                statusElement.innerHTML = '<span>✓</span><span>Токен GitHub настроен и проверен</span>';
+                statusElement.className = 'status-badge status-success';
+            } else {
+                // Токен устарел или стал невалидным
+                statusElement.innerHTML = '<span>⚠</span><span>Токен GitHub устарел</span>';
+                statusElement.className = 'status-badge status-error';
+                localStorage.removeItem('github_token');
+            }
+        } catch (error) {
+            // В случае ошибки сети оставляем статус "настроен", но отмечаем что нужна проверка
+            statusElement.innerHTML = '<span>⚠</span><span>Токен GitHub (требуется проверка)</span>';
+            statusElement.className = 'status-badge status-error';
+        }
     }
 }
 /**
