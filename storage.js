@@ -72,13 +72,41 @@ function loadData() {
                     { id: 6, name: 'Федорова Елена' }
                 ]
             },
-            attendance: {}
+            attendance: {},
+            schedule: [3, 5]
         };
         // Сохраняем структуру по умолчанию
         saveData(data);
     }
     
     return data;
+}
+
+// Получить расписание
+function getSchedule() {
+    const data = loadData();
+    return data.schedule || [1, 2, 3, 4, 5]; // По умолчанию пн-пт
+}
+
+// Сохранить расписание
+function saveSchedule(scheduleDays) {
+    const data = loadData();
+    data.schedule = scheduleDays;
+    return saveData(data);
+}
+
+// Проверить, является ли дата учебным днем
+function isStudyDay(dateString) {
+    const schedule = getSchedule();
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay(); // 0-воскресенье, 1-понедельник, etc.
+    return schedule.includes(dayOfWeek);
+}
+
+// Получить название дня недели на русском
+function getDayName(dayNumber) {
+    const days = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+    return days[dayNumber];
 }
 
 // Валидация структуры данных
@@ -559,4 +587,5 @@ function cleanupOldData() {
     });
     
     saveData(data);
+
 }

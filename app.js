@@ -26,7 +26,15 @@ function updateDateDisplay() {
             year: 'numeric',
             weekday: 'short'
         });
-        dateDisplay.textContent = formattedDate;
+        
+        // Добавляем проверку учебного дня
+        if (isStudyDay(dateSelector.value)) {
+            dateDisplay.textContent = formattedDate;
+            dateDisplay.classList.remove('non-study-day');
+        } else {
+            dateDisplay.textContent = formattedDate + ' (не учебный)';
+            dateDisplay.classList.add('non-study-day');
+        }
     }
 }
 
@@ -83,16 +91,148 @@ function updateAttendanceList() {
     });
 }
 
+// Заменяем функцию toggleAttendance в app.js:
+
 function toggleAttendance(studentId, element) {
     const date = document.getElementById('date-selector').value;
+    
+    // Проверяем, является ли день учебным
+    if (!isStudyDay(date)) {
+        showDateConfirmModal(date, studentId, element);
+        return;
+    }
+    
+    // Если учебный день - продолжаем как обычно
+    proceedWithAttendance(date, studentId, element);
+}
+
+// Новая функция для обработки отметки в не учебный день
+function showDateConfirmModal(date, studentId, element) {
+    const dateObj = new Date(date);
+    const dayName = getDayName(dateObj.getDay());
+    const formattedDate = formatDate(date);
+    
+    // Создаем модальное окно подтверждения
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">⚠️ Подтверждение</h2>
+            </div>
+            <div class="modal-body">
+                <p>Выбранная дата <strong>${formattedDate}</strong> (${dayName}) не является учебным днем по текущему расписанию.</p>
+                <p>Вы уверены, что хотите отметить посещаемость?</p>
+                <div class="confirm-buttons">
+                    <button id="confirm-attendance" class="btn btn-primary">Да, отметить</button>
+                    <button id="cancel-attendance" class="btn btn-secondary">Отмена</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'block';
+    
+    // Обработчики для кнопок подтверждения
+    document.getElementById('confirm-attendance').addEventListener('click', () => {
+        modal.remove();
+        proceedWithAttendance(date, studentId, element);
+    });
+    
+    document.getElementById('cancel-attendance').addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    // Закрытие по клику вне модального окна
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+// Вынесем основную логику в отдельную функцию
+function proceedWithAttendance(date, studentId, element) {
     const present = getNextStatus(studentId, date);
     
-    // Сохраняем в LocalStorage
     if (saveAttendance(date, studentId, present)) {
-        // Обновляем UI
         updateStudentCard(element, present);
         
-        // Виброотклик
+        if ('vibrate' in navigator) {
+            navigator.vibrate(10);
+        }
+    } else {
+        showNotification('Ошибка сохранения', 'error');
+    }
+}// Заменяем функцию toggleAttendance в app.js:
+
+function toggleAttendance(studentId, element) {
+    const date = document.getElementById('date-selector').value;
+    
+    // Проверяем, является ли день учебным
+    if (!isStudyDay(date)) {
+        showDateConfirmModal(date, studentId, element);
+        return;
+    }
+    
+    // Если учебный день - продолжаем как обычно
+    proceedWithAttendance(date, studentId, element);
+}
+
+// Новая функция для обработки отметки в не учебный день
+function showDateConfirmModal(date, studentId, element) {
+    const dateObj = new Date(date);
+    const dayName = getDayName(dateObj.getDay());
+    const formattedDate = formatDate(date);
+    
+    // Создаем модальное окно подтверждения
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">⚠️ Подтверждение</h2>
+            </div>
+            <div class="modal-body">
+                <p>Выбранная дата <strong>${formattedDate}</strong> (${dayName}) не является учебным днем по текущему расписанию.</p>
+                <p>Вы уверены, что хотите отметить посещаемость?</p>
+                <div class="confirm-buttons">
+                    <button id="confirm-attendance" class="btn btn-primary">Да, отметить</button>
+                    <button id="cancel-attendance" class="btn btn-secondary">Отмена</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'block';
+    
+    // Обработчики для кнопок подтверждения
+    document.getElementById('confirm-attendance').addEventListener('click', () => {
+        modal.remove();
+        proceedWithAttendance(date, studentId, element);
+    });
+    
+    document.getElementById('cancel-attendance').addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    // Закрытие по клику вне модального окна
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+// Вынесем основную логику в отдельную функцию
+function proceedWithAttendance(date, studentId, element) {
+    const present = getNextStatus(studentId, date);
+    
+    if (saveAttendance(date, studentId, present)) {
+        updateStudentCard(element, present);
+        
         if ('vibrate' in navigator) {
             navigator.vibrate(10);
         }
@@ -101,6 +241,136 @@ function toggleAttendance(studentId, element) {
     }
 }
 
+// Добавляем новые функции в app.js:
+
+// Инициализация расписания
+function initializeSchedule() {
+    const schedule = getSchedule();
+    updateScheduleDisplay();
+}
+
+// Обновление отображения расписания в интерфейсе
+function updateScheduleDisplay() {
+    const date = document.getElementById('date-selector').value;
+    const dateDisplay = document.getElementById('date-display');
+    
+    if (isStudyDay(date)) {
+        dateDisplay.classList.remove('non-study-day');
+    } else {
+        dateDisplay.classList.add('non-study-day');
+    }
+}
+
+// Открытие модального окна настроек расписания
+function openScheduleSettings() {
+    const schedule = getSchedule();
+    const checkboxes = document.querySelectorAll('.day-checkbox');
+    
+    // Устанавливаем текущие значения
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = schedule.includes(parseInt(checkbox.value));
+    });
+    
+    document.getElementById('schedule-modal').style.display = 'block';
+}
+
+// Сохранение расписания
+function saveScheduleSettings() {
+    const checkboxes = document.querySelectorAll('.day-checkbox:checked');
+    const selectedDays = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (selectedDays.length === 0) {
+        showNotification('Выберите хотя бы один учебный день', 'error');
+        return;
+    }
+    
+    if (saveSchedule(selectedDays)) {
+        showNotification('Расписание сохранено', 'success');
+        closeScheduleModal();
+        updateScheduleDisplay();
+    } else {
+        showNotification('Ошибка сохранения расписания', 'error');
+    }
+}
+
+// Закрытие модального окна расписания
+function closeScheduleModal() {
+    document.getElementById('schedule-modal').style.display = 'none';
+}
+
+function toggleAttendance(studentId, element) {
+    const date = document.getElementById('date-selector').value;
+    
+    // Проверяем, является ли день учебным
+    if (!isStudyDay(date)) {
+        showDateConfirmModal(date, studentId, element);
+        return;
+    }
+    
+    // Если учебный день - продолжаем как обычно
+    proceedWithAttendance(date, studentId, element);
+}
+
+// Новая функция для обработки отметки в не учебный день
+function showDateConfirmModal(date, studentId, element) {
+    const dateObj = new Date(date);
+    const dayName = getDayName(dateObj.getDay());
+    const formattedDate = formatDate(date);
+    
+    // Создаем модальное окно подтверждения
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">⚠️ Подтверждение</h2>
+            </div>
+            <div class="modal-body">
+                <p>Выбранная дата <strong>${formattedDate}</strong> (${dayName}) не является учебным днем по текущему расписанию.</p>
+                <p>Вы уверены, что хотите отметить посещаемость?</p>
+                <div class="confirm-buttons">
+                    <button id="confirm-attendance" class="btn btn-primary">Да, отметить</button>
+                    <button id="cancel-attendance" class="btn btn-secondary">Отмена</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'block';
+    
+    // Обработчики для кнопок подтверждения
+    document.getElementById('confirm-attendance').addEventListener('click', () => {
+        modal.remove();
+        proceedWithAttendance(date, studentId, element);
+    });
+    
+    document.getElementById('cancel-attendance').addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    // Закрытие по клику вне модального окна
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+// Вынесем основную логику в отдельную функцию
+function proceedWithAttendance(date, studentId, element) {
+    const present = getNextStatus(studentId, date);
+    
+    if (saveAttendance(date, studentId, present)) {
+        updateStudentCard(element, present);
+        
+        if ('vibrate' in navigator) {
+            navigator.vibrate(10);
+        }
+    } else {
+        showNotification('Ошибка сохранения', 'error');
+    }
+}
 function updateStudentCard(element, present) {
     element.classList.remove('present-true', 'present-false', 'present-null');
     
@@ -402,7 +672,7 @@ function initializeApp() {
         
         // Обновляем отображение даты
         updateDateDisplay();
-
+        initializeSchedule();
         
         checkPendingOperations();
         checkStorageQuota();
@@ -426,6 +696,7 @@ function initializeApp() {
         // Назначаем обработчики событий
         dateSelector.addEventListener('change', function() {
             updateDateDisplay();
+            updateScheduleDisplay();
             updateAttendanceList();
         });
         
@@ -442,6 +713,11 @@ function initializeApp() {
             }
         });
         
+        // ОБРАБОТЧИКИ ДЛЯ РАСПИСАНИЯ
+        document.getElementById('schedule-settings-btn').addEventListener('click', openScheduleSettings);
+        document.getElementById('close-schedule-modal').addEventListener('click', closeScheduleModal);
+        document.getElementById('save-schedule-btn').addEventListener('click', saveScheduleSettings);
+
         // Обработчики для навигации по месяцам
         document.getElementById('stats-month-selector').addEventListener('change', function() {
             currentStatsMonth = this.value;

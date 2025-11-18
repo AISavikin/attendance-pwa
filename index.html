@@ -32,8 +32,13 @@
 
         <!-- Header -->
         <header class="app-header">
-            <div class="header-content">
-                <h1 class="header-title">📊 Посещаемость</h1>
+                <div class="header-content">
+                    <div class="header-top">
+                        <h1 class="header-title">📊 Посещаемость</h1>
+                        <button id="schedule-settings-btn" class="btn-icon" title="Настройки расписания">
+                            ⚙️
+                        </button>
+                    </div>
                 
                 <div class="form-group date-input-container">
                     <label class="form-label">📅 Дата</label>
@@ -75,7 +80,48 @@
                 </label>
             </div>
         </main>
-
+        <!-- Modal for Schedule Settings -->
+        <div id="schedule-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">📅 Настройка расписания</h2>
+                    <button id="close-schedule-modal" class="modal-close">✕</button>
+                </div>
+                
+                <div class="modal-body">
+                    <p class="text-muted mb-4">Выберите дни недели, в которые проходят занятия:</p>
+                    
+                    <div class="schedule-days">
+                        <label class="schedule-day">
+                            <input type="checkbox" value="1" class="day-checkbox"> Понедельник
+                        </label>
+                        <label class="schedule-day">
+                            <input type="checkbox" value="2" class="day-checkbox"> Вторник
+                        </label>
+                        <label class="schedule-day">
+                            <input type="checkbox" value="3" class="day-checkbox"> Среда
+                        </label>
+                        <label class="schedule-day">
+                            <input type="checkbox" value="4" class="day-checkbox"> Четверг
+                        </label>
+                        <label class="schedule-day">
+                            <input type="checkbox" value="5" class="day-checkbox"> Пятница
+                        </label>
+                        <label class="schedule-day">
+                            <input type="checkbox" value="6" class="day-checkbox"> Суббота
+                        </label>
+                        <label class="schedule-day">
+                            <input type="checkbox" value="0" class="day-checkbox"> Воскресенье
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button id="save-schedule-btn" class="btn btn-primary w-full">Сохранить расписание</button>
+                </div>
+            </div>
+        </div>
+    
 
         <!-- Student Stats Modal -->
         <div id="student-stats-modal" class="modal-overlay">

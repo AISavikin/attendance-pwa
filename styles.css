@@ -638,3 +638,82 @@ body {
     background: var(--bg-secondary) !important;
     box-shadow: var(--shadow-sm) !important;
 }
+
+/* Стили для кнопки настроек */
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+    font-size: 1.25rem;
+}
+
+.btn-icon:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Стили для выбора дней недели */
+.schedule-days {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.schedule-day {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.schedule-day:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-primary);
+}
+
+.schedule-day input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* Стили для модального окна подтверждения */
+.confirm-modal .modal-content {
+    max-width: 400px;
+}
+
+.confirm-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.confirm-buttons .btn {
+    flex: 1;
+}
+
+/* Индикатор не учебного дня */
+.non-study-day {
+    opacity: 0.7;
+}
+
+.non-study-day .date-display::after {
+    content: " (не учебный)";
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
