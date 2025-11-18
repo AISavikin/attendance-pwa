@@ -103,7 +103,14 @@ function toggleAttendance(studentId, element) {
 
 function updateStudentCard(element, present) {
     element.classList.remove('present-true', 'present-false', 'present-null');
-    element.classList.add('present-' + present);
+    
+    if (present === null) {
+        element.classList.add('present-null');  // Стиль "не отмечено"
+    } else if (present === true) {
+        element.classList.add('present-true');  // Стиль "присутствовал"
+    } else {
+        element.classList.add('present-false'); // Стиль "отсутствовал"
+    }
     
     const icon = element.querySelector('.student-status');
     icon.textContent = present === true ? '✅' : present === false ? '❌' : '⬜';

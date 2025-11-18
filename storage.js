@@ -146,7 +146,6 @@ function createBackup() {
 }
 
 // Восстановить из резервной копии
-// ЗАМЕНИТЬ функцию restoreFromBackup в storage.js:
 
 function restoreFromBackup() {
     try {
@@ -190,13 +189,28 @@ function removeBackup() {
 function saveAttendance(date, studentId, present) {
     const data = loadData();
     
+    // Создаем объект для даты если его нет
     if (!data.attendance[date]) {
         data.attendance[date] = {};
     }
     
-    data.attendance[date][studentId] = present;
+    if (present === null) {
+        // 🗑️ УДАЛЯЕМ запись когда статус "не отмечено"
+        delete data.attendance[date][studentId];
+        
+        // Если день стал пустым - удаляем и объект дня
+        if (Object.keys(data.attendance[date]).length === 0) {
+            delete data.attendance[date];
+        }
+    } else {
+        // ✅ СОХРАНЯЕМ только true или false
+        data.attendance[date][studentId] = present;
+    }
+    
     return saveData(data);
 }
+
+
 
 // Получить посещаемость для даты
 function getAttendanceForDate(date) {
