@@ -1,4 +1,9 @@
-// Service Worker для PWA - улучшенная версия
+// sw.js - Service Worker для PWA
+// Обеспечивает оффлайн-работу и кэширование ресурсов
+
+/**
+ * КОНСТАНТЫ ДЛЯ КЭШИРОВАНИЯ
+ */
 const CACHE_NAME = 'attendance-app-v2';
 const urlsToCache = [
     './',
@@ -11,7 +16,10 @@ const urlsToCache = [
     './app.js'
 ];
 
-// Установка Service Worker
+/**
+ * СОБЫТИЕ УСТАНОВКИ SERVICE WORKER
+ * Кэширует критические ресурсы при установке
+ */
 self.addEventListener('install', (event) => {
     console.log('Service Worker: Установлен');
     
@@ -30,8 +38,10 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Активация Service Worker
-
+/**
+ * СОБЫТИЕ АКТИВАЦИИ SERVICE WORKER
+ * Очищает старые кэши и забирает контроль над клиентами
+ */
 self.addEventListener('activate', (event) => {
     console.log('Service Worker: Активирован');
     
@@ -61,30 +71,35 @@ self.addEventListener('activate', (event) => {
         })
     );
 });
-// Стратегия кэширования: Cache First, Fallback to Network
+
+/**
+ * СОБЫТИЕ ЗАПРОСА РЕСУРСОВ
+ * Реализует стратегии кэширования для разных типов ресурсов
+ */
 self.addEventListener('fetch', (event) => {
     // Пропускаем не-GET запросы
     if (event.request.method !== 'GET') return;
     
-    // Для API запросов используем Network First
+    // Для API запросов используем Network First стратегию
     if (event.request.url.includes('/api/')) {
         event.respondWith(
             fetch(event.request)
                 .then(response => {
-                    // Клонируем response чтобы использовать его дважды
+                    // Кэшируем успешные ответы
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME)
                         .then(cache => cache.put(event.request, responseClone));
                     return response;
                 })
                 .catch(() => {
+                    // Fallback: возвращаем из кэша если сеть недоступна
                     return caches.match(event.request);
                 })
         );
         return;
     }
     
-    // Для статических ресурсов используем Cache First
+    // Для статических ресурсов используем Cache First стратегию
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
@@ -101,7 +116,7 @@ self.addEventListener('fetch', (event) => {
                             return response;
                         }
                         
-                        // Клонируем response для кэширования
+                        // Кэшируем новый ресурс
                         const responseToCache = response.clone();
                         caches.open(CACHE_NAME)
                             .then(cache => {
@@ -111,12 +126,11 @@ self.addEventListener('fetch', (event) => {
                         return response;
                     })
                     .catch(() => {
-                        // Fallback для страниц
+                        // Fallback для различных типов ресурсов
                         if (event.request.destination === 'document') {
                             return caches.match('./index.html');
                         }
                         
-                        // Fallback для изображений
                         if (event.request.destination === 'image') {
                             return caches.match('./icons/icon-192.png');
                         }
@@ -130,7 +144,10 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Фоновая синхронизация (для будущего использования)
+/**
+ * СОБЫТИЕ ФОНОВОЙ СИНХРОНИЗАЦИИ
+ * (Заготовка для будущей реализации синхронизации с бэкендом)
+ */
 self.addEventListener('sync', (event) => {
     if (event.tag === 'background-sync') {
         console.log('Background sync triggered');

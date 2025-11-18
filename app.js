@@ -1,19 +1,34 @@
-// app.js - Синхронная версия с улучшенным полем даты
+// app.js - Приложение для отметки посещаемости студентов (PWA)
+// Основной файл приложения - управление UI и бизнес-логикой
 
-// Глобальные переменные для управления состоянием модального окна статистики
-let currentStudentId = null;
-let currentStatsMonth = null;
-let availableMonths = [];
+/**
+ * ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ УПРАВЛЕНИЯ СОСТОЯНИЕМ
+ */
+let currentStudentId = null;    // ID текущего студента для статистики
+let currentStatsMonth = null;   // Текущий месяц для отображения статистики
+let availableMonths = [];       // Доступные месяцы с данными посещаемости
 
-// Добавить эту функцию в app.js
+/**
+ * КОММУНИКАЦИЯ С МОДУЛЕМ ХРАНЕНИЯ ДАННЫХ
+ */
+
+/**
+ * Устанавливает колбэк для обновления UI после импорта данных
+ * @param {Function} callback - Функция для вызова после импорта
+ */
 function setOnDataImported(callback) {
-    // Просто передаем колбэк в storage.js
     if (typeof setOnDataImportedStorage === 'function') {
         setOnDataImportedStorage(callback);
     }
 }
 
-// Функция для обновления отображения даты
+/**
+ * ФУНКЦИИ ДЛЯ РАБОТЫ С ДАТАМИ И ИХ ОТОБРАЖЕНИЕМ
+ */
+
+/**
+ * Обновляет отображение выбранной даты с учетом учебного расписания
+ */
 function updateDateDisplay() {
     const dateSelector = document.getElementById('date-selector');
     const dateDisplay = document.getElementById('date-display');
@@ -27,7 +42,7 @@ function updateDateDisplay() {
             weekday: 'short'
         });
         
-        // Добавляем проверку учебного дня
+        // Проверяем учебный день и применяем соответствующие стили
         if (isStudyDay(dateSelector.value)) {
             dateDisplay.textContent = formattedDate;
             dateDisplay.classList.remove('non-study-day');
@@ -38,7 +53,13 @@ function updateDateDisplay() {
     }
 }
 
-// Основные функции приложения
+/**
+ * ОСНОВНЫЕ ФУНКЦИИ ПРИЛОЖЕНИЯ
+ */
+
+/**
+ * Обновляет список студентов для выбранной даты и группы
+ */
 function updateAttendanceList() {
     const date = document.getElementById('date-selector').value;
     const group = document.getElementById('group-selector').value;
@@ -50,49 +71,78 @@ function updateAttendanceList() {
     const container = document.getElementById('students-container');
     container.innerHTML = '';
     
+    // Показываем сообщение если в группе нет студентов
     if (students.length === 0) {
         container.innerHTML = '<div class="text-center text-muted">Нет студентов в группе</div>';
         return;
     }
     
+    // Создаем карточки для каждого студента
     students.forEach(student => {
         const present = attendance[student.id] !== undefined ? attendance[student.id] : null;
-        
-        const studentCard = document.createElement('div');
-        studentCard.className = `student-card present-${present}`;
-        
-        studentCard.innerHTML = `
-            <span class="student-name">${student.name}</span>
-            <div class="student-info">
-                <button class="student-status-btn" data-student-id="${student.id}">
-                    📊
-                </button>
-                <span class="student-status status-${present}">
-                    ${present === true ? '✅' : present === false ? '❌' : '⬜'}
-                </span>
-            </div>
-        `;
-        
+        const studentCard = createStudentCard(student, present);
         container.appendChild(studentCard);
         
-        // Добавляем обработчик клика на карточку
-        studentCard.addEventListener('click', (e) => {
-            if (!e.target.closest('.student-status-btn')) {
-                toggleAttendance(student.id, studentCard);
-            }
-        });
-        
-        // Обработчик для кнопки статистики
-        const statsBtn = studentCard.querySelector('.student-status-btn');
-        statsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openStudentStats(student.id);
-        });
+        // Добавляем обработчики событий для карточки
+        setupStudentCardEventHandlers(studentCard, student.id);
     });
 }
 
-// Заменяем функцию toggleAttendance в app.js:
+/**
+ * Создает DOM-элемент карточки студента
+ * @param {Object} student - Объект студента
+ * @param {boolean|null} present - Статус присутствия
+ * @returns {HTMLElement} Элемент карточки студента
+ */
+function createStudentCard(student, present) {
+    const studentCard = document.createElement('div');
+    studentCard.className = `student-card present-${present}`;
+    
+    studentCard.innerHTML = `
+        <span class="student-name">${student.name}</span>
+        <div class="student-info">
+            <button class="student-status-btn" data-student-id="${student.id}">
+                📊
+            </button>
+            <span class="student-status status-${present}">
+                ${present === true ? '✅' : present === false ? '❌' : '⬜'}
+            </span>
+        </div>
+    `;
+    
+    return studentCard;
+}
 
+/**
+ * Настраивает обработчики событий для карточки студента
+ * @param {HTMLElement} studentCard - Элемент карточки студента
+ * @param {number} studentId - ID студента
+ */
+function setupStudentCardEventHandlers(studentCard, studentId) {
+    // Обработчик клика по карточке (отметка посещаемости)
+    studentCard.addEventListener('click', (e) => {
+        if (!e.target.closest('.student-status-btn')) {
+            toggleAttendance(studentId, studentCard);
+        }
+    });
+    
+    // Обработчик для кнопки статистики
+    const statsBtn = studentCard.querySelector('.student-status-btn');
+    statsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openStudentStats(studentId);
+    });
+}
+
+/**
+ * ФУНКЦИИ ДЛЯ РАБОТЫ С ПОСЕЩАЕМОСТЬЮ
+ */
+
+/**
+ * Переключает статус присутствия студента с проверкой учебного дня
+ * @param {number} studentId - ID студента
+ * @param {HTMLElement} element - Элемент карточки студента
+ */
 function toggleAttendance(studentId, element) {
     const date = document.getElementById('date-selector').value;
     
@@ -106,13 +156,17 @@ function toggleAttendance(studentId, element) {
     proceedWithAttendance(date, studentId, element);
 }
 
-// Новая функция для обработки отметки в не учебный день
+/**
+ * Показывает модальное окно подтверждения для не учебного дня
+ * @param {string} date - Дата в формате YYYY-MM-DD
+ * @param {number} studentId - ID студента
+ * @param {HTMLElement} element - Элемент карточки студента
+ */
 function showDateConfirmModal(date, studentId, element) {
     const dateObj = new Date(date);
     const dayName = getDayName(dateObj.getDay());
     const formattedDate = formatDate(date);
     
-    // Создаем модальное окно подтверждения
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
@@ -152,87 +206,19 @@ function showDateConfirmModal(date, studentId, element) {
     });
 }
 
-// Вынесем основную логику в отдельную функцию
+/**
+ * Основная логика отметки посещаемости
+ * @param {string} date - Дата в формате YYYY-MM-DD
+ * @param {number} studentId - ID студента
+ * @param {HTMLElement} element - Элемент карточки студента
+ */
 function proceedWithAttendance(date, studentId, element) {
     const present = getNextStatus(studentId, date);
     
     if (saveAttendance(date, studentId, present)) {
         updateStudentCard(element, present);
         
-        if ('vibrate' in navigator) {
-            navigator.vibrate(10);
-        }
-    } else {
-        showNotification('Ошибка сохранения', 'error');
-    }
-}// Заменяем функцию toggleAttendance в app.js:
-
-function toggleAttendance(studentId, element) {
-    const date = document.getElementById('date-selector').value;
-    
-    // Проверяем, является ли день учебным
-    if (!isStudyDay(date)) {
-        showDateConfirmModal(date, studentId, element);
-        return;
-    }
-    
-    // Если учебный день - продолжаем как обычно
-    proceedWithAttendance(date, studentId, element);
-}
-
-// Новая функция для обработки отметки в не учебный день
-function showDateConfirmModal(date, studentId, element) {
-    const dateObj = new Date(date);
-    const dayName = getDayName(dateObj.getDay());
-    const formattedDate = formatDate(date);
-    
-    // Создаем модальное окно подтверждения
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content confirm-modal">
-            <div class="modal-header">
-                <h2 class="modal-title">⚠️ Подтверждение</h2>
-            </div>
-            <div class="modal-body">
-                <p>Выбранная дата <strong>${formattedDate}</strong> (${dayName}) не является учебным днем по текущему расписанию.</p>
-                <p>Вы уверены, что хотите отметить посещаемость?</p>
-                <div class="confirm-buttons">
-                    <button id="confirm-attendance" class="btn btn-primary">Да, отметить</button>
-                    <button id="cancel-attendance" class="btn btn-secondary">Отмена</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    modal.style.display = 'block';
-    
-    // Обработчики для кнопок подтверждения
-    document.getElementById('confirm-attendance').addEventListener('click', () => {
-        modal.remove();
-        proceedWithAttendance(date, studentId, element);
-    });
-    
-    document.getElementById('cancel-attendance').addEventListener('click', () => {
-        modal.remove();
-    });
-    
-    // Закрытие по клику вне модального окна
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
-}
-
-// Вынесем основную логику в отдельную функцию
-function proceedWithAttendance(date, studentId, element) {
-    const present = getNextStatus(studentId, date);
-    
-    if (saveAttendance(date, studentId, present)) {
-        updateStudentCard(element, present);
-        
+        // Вибрация для тактильного отклика (если поддерживается)
         if ('vibrate' in navigator) {
             navigator.vibrate(10);
         }
@@ -241,15 +227,44 @@ function proceedWithAttendance(date, studentId, element) {
     }
 }
 
-// Добавляем новые функции в app.js:
+/**
+ * Обновляет внешний вид карточки студента
+ * @param {HTMLElement} element - Элемент карточки студента
+ * @param {boolean|null} present - Новый статус присутствия
+ */
+function updateStudentCard(element, present) {
+    // Удаляем предыдущие классы статуса
+    element.classList.remove('present-true', 'present-false', 'present-null');
+    
+    // Добавляем соответствующий класс статуса
+    if (present === null) {
+        element.classList.add('present-null');  // Стиль "не отмечено"
+    } else if (present === true) {
+        element.classList.add('present-true');  // Стиль "присутствовал"
+    } else {
+        element.classList.add('present-false'); // Стиль "отсутствовал"
+    }
+    
+    // Обновляем иконку статуса
+    const icon = element.querySelector('.student-status');
+    icon.textContent = present === true ? '✅' : present === false ? '❌' : '⬜';
+}
 
-// Инициализация расписания
+/**
+ * ФУНКЦИИ ДЛЯ РАБОТЫ С РАСПИСАНИЕМ
+ */
+
+/**
+ * Инициализирует расписание при загрузке приложения
+ */
 function initializeSchedule() {
     const schedule = getSchedule();
     updateScheduleDisplay();
 }
 
-// Обновление отображения расписания в интерфейсе
+/**
+ * Обновляет отображение расписания в интерфейсе
+ */
 function updateScheduleDisplay() {
     const date = document.getElementById('date-selector').value;
     const dateDisplay = document.getElementById('date-display');
@@ -261,7 +276,9 @@ function updateScheduleDisplay() {
     }
 }
 
-// Открытие модального окна настроек расписания
+/**
+ * Открывает модальное окно настроек расписания
+ */
 function openScheduleSettings() {
     const schedule = getSchedule();
     const checkboxes = document.querySelectorAll('.day-checkbox');
@@ -274,7 +291,9 @@ function openScheduleSettings() {
     document.getElementById('schedule-modal').style.display = 'block';
 }
 
-// Сохранение расписания
+/**
+ * Сохраняет настройки расписания
+ */
 function saveScheduleSettings() {
     const checkboxes = document.querySelectorAll('.day-checkbox:checked');
     const selectedDays = Array.from(checkboxes).map(cb => parseInt(cb.value));
@@ -293,100 +312,21 @@ function saveScheduleSettings() {
     }
 }
 
-// Закрытие модального окна расписания
+/**
+ * Закрывает модальное окно расписания
+ */
 function closeScheduleModal() {
     document.getElementById('schedule-modal').style.display = 'none';
 }
 
-function toggleAttendance(studentId, element) {
-    const date = document.getElementById('date-selector').value;
-    
-    // Проверяем, является ли день учебным
-    if (!isStudyDay(date)) {
-        showDateConfirmModal(date, studentId, element);
-        return;
-    }
-    
-    // Если учебный день - продолжаем как обычно
-    proceedWithAttendance(date, studentId, element);
-}
+/**
+ * ФУНКЦИИ ДЛЯ РАБОТЫ СО СТАТИСТИКОЙ СТУДЕНТА
+ */
 
-// Новая функция для обработки отметки в не учебный день
-function showDateConfirmModal(date, studentId, element) {
-    const dateObj = new Date(date);
-    const dayName = getDayName(dateObj.getDay());
-    const formattedDate = formatDate(date);
-    
-    // Создаем модальное окно подтверждения
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content confirm-modal">
-            <div class="modal-header">
-                <h2 class="modal-title">⚠️ Подтверждение</h2>
-            </div>
-            <div class="modal-body">
-                <p>Выбранная дата <strong>${formattedDate}</strong> (${dayName}) не является учебным днем по текущему расписанию.</p>
-                <p>Вы уверены, что хотите отметить посещаемость?</p>
-                <div class="confirm-buttons">
-                    <button id="confirm-attendance" class="btn btn-primary">Да, отметить</button>
-                    <button id="cancel-attendance" class="btn btn-secondary">Отмена</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    modal.style.display = 'block';
-    
-    // Обработчики для кнопок подтверждения
-    document.getElementById('confirm-attendance').addEventListener('click', () => {
-        modal.remove();
-        proceedWithAttendance(date, studentId, element);
-    });
-    
-    document.getElementById('cancel-attendance').addEventListener('click', () => {
-        modal.remove();
-    });
-    
-    // Закрытие по клику вне модального окна
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
-}
-
-// Вынесем основную логику в отдельную функцию
-function proceedWithAttendance(date, studentId, element) {
-    const present = getNextStatus(studentId, date);
-    
-    if (saveAttendance(date, studentId, present)) {
-        updateStudentCard(element, present);
-        
-        if ('vibrate' in navigator) {
-            navigator.vibrate(10);
-        }
-    } else {
-        showNotification('Ошибка сохранения', 'error');
-    }
-}
-function updateStudentCard(element, present) {
-    element.classList.remove('present-true', 'present-false', 'present-null');
-    
-    if (present === null) {
-        element.classList.add('present-null');  // Стиль "не отмечено"
-    } else if (present === true) {
-        element.classList.add('present-true');  // Стиль "присутствовал"
-    } else {
-        element.classList.add('present-false'); // Стиль "отсутствовал"
-    }
-    
-    const icon = element.querySelector('.student-status');
-    icon.textContent = present === true ? '✅' : present === false ? '❌' : '⬜';
-}
-
-// Функции для работы со статистикой студента
+/**
+ * Открывает модальное окно статистики студента
+ * @param {number} studentId - ID студента
+ */
 function openStudentStats(studentId) {
     currentStudentId = studentId;
     const student = getStudentById(studentId);
@@ -409,18 +349,18 @@ function openStudentStats(studentId) {
     const currentMonth = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
     currentStatsMonth = availableMonths.includes(currentMonth) ? currentMonth : availableMonths[0];
     
-    // Обновляем селектор месяцев
+    // Обновляем UI
     updateMonthSelector();
-    
-    // Заполняем модальное окно
-    document.getElementById('student-stats-name').textContent = student.name; // Только имя
-    
-    // Обновляем статистику для выбранного месяца
+    document.getElementById('student-stats-name').textContent = student.name;
     updateStudentStatsDisplay();
     
     // Показываем модальное окно
     document.getElementById('student-stats-modal').style.display = 'block';
 }
+
+/**
+ * Обновляет селектор месяцев в модальном окне статистики
+ */
 function updateMonthSelector() {
     const monthSelector = document.getElementById('stats-month-selector');
     monthSelector.innerHTML = '';
@@ -436,13 +376,14 @@ function updateMonthSelector() {
     });
 }
 
+/**
+ * Обновляет отображение статистики студента
+ */
 function updateStudentStatsDisplay() {
     if (!currentStudentId || !currentStatsMonth) return;
     
     const [year, month] = currentStatsMonth.split('-');
     const stats = getStudentStatsForMonth(currentStudentId, year, month);
-    const student = getStudentById(currentStudentId);
-    
     const content = document.getElementById('student-stats-content');
     
     if (stats.dailyRecords.length > 0) {
@@ -470,7 +411,9 @@ function updateStudentStatsDisplay() {
     }
 }
 
-
+/**
+ * Закрывает модальное окно статистики студента
+ */
 function closeStudentStats() {
     document.getElementById('student-stats-modal').style.display = 'none';
     currentStudentId = null;
@@ -478,7 +421,15 @@ function closeStudentStats() {
     availableMonths = [];
 }
 
-// Вспомогательные функции для форматирования
+/**
+ * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+ */
+
+/**
+ * Форматирует дату для отображения
+ * @param {string} dateString - Дата в формате YYYY-MM-DD
+ * @returns {string} Отформатированная дата
+ */
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('ru-RU', {
@@ -488,6 +439,11 @@ function formatDate(dateString) {
     });
 }
 
+/**
+ * Форматирует месяц для отображения
+ * @param {string} monthString - Месяц в формате YYYY-MM
+ * @returns {string} Отформатированное название месяца
+ */
 function formatMonthForDisplay(monthString) {
     const [year, month] = monthString.split('-');
     const date = new Date(year, month - 1);
@@ -497,7 +453,9 @@ function formatMonthForDisplay(monthString) {
     });
 }
 
-// Обновить список групп в селекторе
+/**
+ * Обновляет список групп в селекторе
+ */
 function updateGroupSelector() {
     const groupNames = getGroupNames();
     const groupSelector = document.getElementById('group-selector');
@@ -505,10 +463,8 @@ function updateGroupSelector() {
     // Сохраняем текущее выбранное значение
     const currentValue = groupSelector.value;
     
-    // Очищаем селектор
+    // Очищаем и заполняем селектор
     groupSelector.innerHTML = '';
-    
-    // Заполняем новыми группами
     groupNames.forEach(groupName => {
         const option = document.createElement('option');
         option.value = groupName;
@@ -516,18 +472,21 @@ function updateGroupSelector() {
         groupSelector.appendChild(option);
     });
     
-    // Восстанавливаем выбранное значение, если оно еще существует
+    // Восстанавливаем выбранное значение
     if (groupNames.includes(currentValue)) {
         groupSelector.value = currentValue;
     } else if (groupNames.length > 0) {
-        // Иначе выбираем первую группу
         groupSelector.value = groupNames[0];
     }
-    
-    console.log('Group selector updated with groups:', groupNames);
 }
 
-// Обработчики онлайн/оффлайн статуса
+/**
+ * ФУНКЦИИ ДЛЯ РАБОТЫ С PWA И ОФФЛАЙН-РЕЖИМОМ
+ */
+
+/**
+ * Обработчики онлайн/оффлайн статуса
+ */
 function handleOnlineStatus() {
     document.getElementById('offline-indicator').classList.add('hidden');
 }
@@ -536,7 +495,9 @@ function handleOfflineStatus() {
     document.getElementById('offline-indicator').classList.remove('hidden');
 }
 
-// PWA Installation
+/**
+ * Инициализирует PWA функциональность
+ */
 function initializePWA() {
     let deferredPrompt;
     const installButton = document.getElementById('installButton');
@@ -577,14 +538,18 @@ function initializePWA() {
     });
 }
 
+/**
+ * ФУНКЦИИ ДЛЯ РЕЗЕРВНОГО КОПИРОВАНИЯ И ЦЕЛОСТНОСТИ ДАННЫХ
+ */
 
+/**
+ * Настраивает предупреждение о несохраненных изменениях
+ */
 function setupBeforeUnload() {
     let hasUnsavedChanges = false;
     
-    // Сохраняем оригинальную функцию
     const originalSaveAttendance = window.saveAttendance;
     
-    // Отслеживать изменения посещаемости
     window.saveAttendance = function(date, studentId, present) {
         hasUnsavedChanges = true;
         const result = originalSaveAttendance(date, studentId, present);
@@ -608,10 +573,11 @@ function setupBeforeUnload() {
     });
 }
 
+/**
+ * Настраивает автоматическое резервное копирование
+ */
 function setupAutoBackup() {
     let changeCount = 0;
-    
-    // Сохраняем оригинальную функцию
     const originalSaveData = window.saveData;
     
     // Создавать резервную копию каждые 24 часа
@@ -622,7 +588,7 @@ function setupAutoBackup() {
         }
     }, 24 * 60 * 60 * 1000);
     
-    // Переопределяем saveData для отслеживания изменений
+    // Отслеживаем изменения для инкрементного бэкапа
     window.saveData = function(data) {
         changeCount++;
         
@@ -634,18 +600,17 @@ function setupAutoBackup() {
             }
         }
         
-        // Вызываем оригинальную функцию
         return originalSaveData(data);
     };
     
-    // Резервная копия при закрытии вкладки (если были изменения)
+    // Резервная копия при закрытии вкладки
     window.addEventListener('beforeunload', () => {
         if (changeCount > 0) {
             createBackup();
         }
     });
     
-    // Резервная копия при переходе в онлайн (если были оффлайн-изменения)
+    // Резервная копия при переходе в онлайн
     window.addEventListener('online', () => {
         if (changeCount > 0) {
             createBackup();
@@ -654,9 +619,13 @@ function setupAutoBackup() {
     });
 }
 
+/**
+ * ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+ */
 
-
-// Инициализация приложения
+/**
+ * Основная функция инициализации приложения
+ */
 function initializeApp() {
     try {
         // Скрываем индикатор загрузки
@@ -670,13 +639,13 @@ function initializeApp() {
         const today = new Date().toISOString().split('T')[0];
         dateSelector.value = today;
         
-        // Обновляем отображение даты
+        // Инициализируем основные компоненты
         updateDateDisplay();
         initializeSchedule();
         
+        // Настраиваем системы безопасности и бэкапа
         checkPendingOperations();
         checkStorageQuota();
-
         setupAutoBackup();
         setupBeforeUnload();
         
@@ -686,14 +655,17 @@ function initializeApp() {
             updateAttendanceList();
         });
         
-        // Инициализируем селектор групп
+        // Инициализируем UI компоненты
         updateGroupSelector();
         
+        // Настраиваем синхронизацию между вкладками
         if (typeof setupCrossTabSync === 'function') {
             setupCrossTabSync();
         }
 
-        // Назначаем обработчики событий
+        // НАСТРОЙКА ОБРАБОТЧИКОВ СОБЫТИЙ
+        
+        // Основные элементы управления
         dateSelector.addEventListener('change', function() {
             updateDateDisplay();
             updateScheduleDisplay();
@@ -704,7 +676,7 @@ function initializeApp() {
         document.getElementById('export-btn').addEventListener('click', exportData);
         document.getElementById('import-file').addEventListener('change', importData);
         
-        // Обработчики для модального окна статистики
+        // Модальное окно статистики
         document.getElementById('close-stats-modal').addEventListener('click', closeStudentStats);
         document.getElementById('close-stats-btn').addEventListener('click', closeStudentStats);
         document.getElementById('student-stats-modal').addEventListener('click', function(e) {
@@ -713,18 +685,18 @@ function initializeApp() {
             }
         });
         
-        // ОБРАБОТЧИКИ ДЛЯ РАСПИСАНИЯ
+        // Модальное окно расписания
         document.getElementById('schedule-settings-btn').addEventListener('click', openScheduleSettings);
         document.getElementById('close-schedule-modal').addEventListener('click', closeScheduleModal);
         document.getElementById('save-schedule-btn').addEventListener('click', saveScheduleSettings);
 
-        // Обработчики для навигации по месяцам
+        // Навигация по месяцам в статистике
         document.getElementById('stats-month-selector').addEventListener('change', function() {
             currentStatsMonth = this.value;
             updateStudentStatsDisplay();
         });
        
-        // Закрытие модального окна по клавише Escape
+        // Глобальные обработчики
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeStudentStats();
@@ -735,7 +707,7 @@ function initializeApp() {
         window.addEventListener('online', handleOnlineStatus);
         window.addEventListener('offline', handleOfflineStatus);
         
-        // Проверяем начальный статус
+        // Проверяем начальный статус подключения
         if (!navigator.onLine) {
             handleOfflineStatus();
         }
@@ -743,7 +715,7 @@ function initializeApp() {
         // Инициализируем PWA
         initializePWA();
         
-        // Регистрация Service Worker
+        // Регистрация Service Worker для оффлайн-работы
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')
                 .then(registration => {
@@ -770,9 +742,6 @@ function initializeApp() {
         showNotification('Ошибка загрузки приложения', 'error');
     }
 }
-
-// В app.js добавить
-
 
 // Инициализируем приложение когда DOM загружен
 document.addEventListener('DOMContentLoaded', initializeApp);
