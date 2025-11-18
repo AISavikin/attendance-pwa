@@ -412,6 +412,359 @@ function closeStudentStats() {
 }
 
 /**
+ * ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ ГРУППАМИ И СТУДЕНТАМИ
+ */
+
+/**
+ * Открывает модальное окно управления
+ */
+function openManageModal() {
+    // Загружаем актуальные данные
+    loadGroupsTab();
+    loadStudentsTab();
+    
+    // Показываем модальное окно
+    document.getElementById('manage-modal').style.display = 'block';
+}
+
+/**
+ * Закрывает модальное окно управления
+ */
+function closeManageModal() {
+    document.getElementById('manage-modal').style.display = 'none';
+    // Очищаем поля ввода
+    document.getElementById('new-group-name').value = '';
+    document.getElementById('new-student-name').value = '';
+}
+
+/**
+ * Загружает и отображает данные на вкладке групп
+ */
+function loadGroupsTab() {
+    const groups = getGroups();
+    const groupsList = document.getElementById('groups-list');
+    
+    groupsList.innerHTML = '';
+    
+    if (Object.keys(groups).length === 0) {
+        groupsList.innerHTML = '<div class="text-center text-muted">Нет групп</div>';
+        return;
+    }
+    
+    Object.entries(groups).forEach(([groupName, studentIds]) => {
+        const groupItem = document.createElement('div');
+        groupItem.className = 'group-item';
+        
+        groupItem.innerHTML = `
+            <div class="group-info">
+                <span class="group-name">${groupName}</span>
+                <span class="group-stats">${studentIds.length} студентов</span>
+            </div>
+            <div class="group-actions">
+                <button class="btn btn-sm btn-warning delete-group-btn" data-group="${groupName}">
+                    Удалить
+                </button>
+            </div>
+        `;
+        
+        groupsList.appendChild(groupItem);
+    });
+    
+    // Добавляем обработчики для кнопок удаления групп
+    document.querySelectorAll('.delete-group-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const groupName = this.getAttribute('data-group');
+            deleteGroup(groupName);
+        });
+    });
+}
+
+/**
+ * Загружает и отображает данные на вкладке студентов
+ */
+function loadStudentsTab() {
+    const allStudents = getAllStudents();
+    const groups = getGroups();
+    const groupNames = Object.keys(groups);
+    
+    // Обновляем селекторы групп
+    updateGroupSelectors(groupNames);
+    
+    const studentsList = document.getElementById('students-list');
+    studentsList.innerHTML = '';
+    
+    if (Object.keys(allStudents).length === 0) {
+        studentsList.innerHTML = '<div class="text-center text-muted">Нет студентов</div>';
+        return;
+    }
+    
+    // Получаем всех студентов с информацией о группах
+    const studentsWithGroups = [];
+    for (const groupName in groups) {
+        groups[groupName].forEach(studentId => {
+            const student = allStudents[studentId];
+            if (student) {
+                studentsWithGroups.push({
+                    ...student,
+                    group: groupName
+                });
+            }
+        });
+    }
+    
+    // Сортируем студентов по имени
+    studentsWithGroups.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Отображаем студентов
+    studentsWithGroups.forEach(student => {
+        const studentItem = document.createElement('div');
+        studentItem.className = 'student-item';
+        studentItem.setAttribute('data-student-id', student.id);
+        
+        studentItem.innerHTML = `
+            <div class="student-info">
+                <span class="student-name">${student.name}</span>
+                <span class="student-group">Группа: ${student.group}</span>
+            </div>
+            <div class="student-actions">
+                <select class="form-select move-group-select btn-sm" data-student-id="${student.id}">
+                    <option value="">Переместить в...</option>
+                    ${groupNames.filter(g => g !== student.group).map(group => 
+                        `<option value="${group}">${group}</option>`
+                    ).join('')}
+                </select>
+                <button class="btn btn-sm btn-warning edit-student-btn" data-student-id="${student.id}">
+                    ✏️
+                </button>
+                <button class="btn btn-sm btn-danger delete-student-btn" data-student-id="${student.id}">
+                    🗑️
+                </button>
+            </div>
+        `;
+        
+        studentsList.appendChild(studentItem);
+    });
+    
+    // Добавляем обработчики событий
+    setupStudentEventHandlers();
+}
+
+/**
+ * Обновляет селекторы групп в интерфейсе
+ */
+function updateGroupSelectors(groupNames) {
+    const newStudentGroup = document.getElementById('new-student-group');
+    const studentGroupFilter = document.getElementById('student-group-filter');
+    
+    // Очищаем и заполняем селектор для добавления студента
+    newStudentGroup.innerHTML = '';
+    groupNames.forEach(groupName => {
+        const option = document.createElement('option');
+        option.value = groupName;
+        option.textContent = groupName;
+        newStudentGroup.appendChild(option);
+    });
+    
+    // Очищаем и заполняем селектор фильтра
+    studentGroupFilter.innerHTML = '<option value="">Все группы</option>';
+    groupNames.forEach(groupName => {
+        const option = document.createElement('option');
+        option.value = groupName;
+        option.textContent = groupName;
+        studentGroupFilter.appendChild(option);
+    });
+}
+
+/**
+ * Настраивает обработчики событий для студентов
+ */
+function setupStudentEventHandlers() {
+    // Обработчик перемещения студентов
+    document.querySelectorAll('.move-group-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const studentId = parseInt(this.getAttribute('data-student-id'));
+            const targetGroup = this.value;
+            
+            if (targetGroup && confirm('Переместить студента в выбранную группу?')) {
+                if (moveStudent(studentId, targetGroup)) {
+                    loadStudentsTab(); // Перезагружаем список
+                    updateGroupSelector(); // Обновляем основной селектор групп
+                    updateAttendanceList(); // Обновляем список посещаемости
+                }
+            }
+            
+            // Сбрасываем значение селектора
+            this.value = '';
+        });
+    });
+    
+    // Обработчик редактирования студентов
+    document.querySelectorAll('.edit-student-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const studentId = parseInt(this.getAttribute('data-student-id'));
+            editStudent(studentId);
+        });
+    });
+    
+    // Обработчик удаления студентов
+    document.querySelectorAll('.delete-student-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const studentId = parseInt(this.getAttribute('data-student-id'));
+            deleteStudent(studentId);
+        });
+    });
+    
+    // Обработчик поиска студентов
+    document.getElementById('student-search').addEventListener('input', filterStudents);
+    
+    // Обработчик фильтра по группам
+    document.getElementById('student-group-filter').addEventListener('change', filterStudents);
+}
+
+/**
+ * Фильтрует список студентов по имени и группе
+ */
+function filterStudents() {
+    const searchTerm = document.getElementById('student-search').value.toLowerCase();
+    const selectedGroup = document.getElementById('student-group-filter').value;
+    const studentItems = document.querySelectorAll('.student-item');
+    
+    studentItems.forEach(item => {
+        const studentName = item.querySelector('.student-name').textContent.toLowerCase();
+        const studentGroup = item.querySelector('.student-group').textContent.replace('Группа: ', '');
+        
+        const matchesSearch = studentName.includes(searchTerm);
+        const matchesGroup = !selectedGroup || studentGroup === selectedGroup;
+        
+        if (matchesSearch && matchesGroup) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * Добавляет новую группу
+ */
+function addNewGroup() {
+    const groupNameInput = document.getElementById('new-group-name');
+    const groupName = groupNameInput.value.trim();
+    
+    if (!groupName) {
+        showNotification('Введите название группы', 'error');
+        return;
+    }
+    
+    if (addGroup(groupName)) {
+        groupNameInput.value = ''; // Очищаем поле ввода
+        loadGroupsTab(); // Обновляем список групп
+        loadStudentsTab(); // Обновляем вкладку студентов (для селекторов)
+        updateGroupSelector(); // Обновляем основной селектор групп
+    }
+}
+
+/**
+ * Удаляет группу
+ */
+function deleteGroup(groupName) {
+    if (!confirm(`Вы уверены, что хотите удалить группу "${groupName}"?`)) {
+        return;
+    }
+    
+    if (removeGroup(groupName)) {
+        loadGroupsTab(); // Обновляем список групп
+        loadStudentsTab(); // Обновляем вкладку студентов
+        updateGroupSelector(); // Обновляем основной селектор групп
+        updateAttendanceList(); // Обновляем список посещаемости
+    }
+}
+
+/**
+ * Добавляет нового студента
+ */
+function addNewStudent() {
+    const studentNameInput = document.getElementById('new-student-name');
+    const groupSelect = document.getElementById('new-student-group');
+    
+    const studentName = studentNameInput.value.trim();
+    const groupName = groupSelect.value;
+    
+    if (!studentName) {
+        showNotification('Введите ФИО студента', 'error');
+        return;
+    }
+    
+    if (!groupName) {
+        showNotification('Выберите группу для студента', 'error');
+        return;
+    }
+    
+    if (addStudent(groupName, studentName)) {
+        studentNameInput.value = ''; // Очищаем поле ввода
+        loadStudentsTab(); // Обновляем список студентов
+        updateAttendanceList(); // Обновляем список посещаемости
+    }
+}
+
+/**
+ * Редактирует студента
+ */
+function editStudent(studentId) {
+    const student = getStudentById(studentId);
+    if (!student) return;
+    
+    const newName = prompt('Введите новое ФИО студента:', student.name);
+    
+    if (newName && newName.trim() !== '' && newName !== student.name) {
+        if (updateStudent(studentId, newName.trim())) {
+            loadStudentsTab(); // Обновляем список студентов
+            updateAttendanceList(); // Обновляем список посещаемости
+        }
+    }
+}
+
+/**
+ * Удаляет студента
+ */
+function deleteStudent(studentId) {
+    const student = getStudentById(studentId);
+    if (!student) return;
+    
+    if (!confirm(`Вы уверены, что хотите удалить студента "${student.name}"?`)) {
+        return;
+    }
+    
+    if (removeStudent(studentId)) {
+        loadStudentsTab(); // Обновляем список студентов
+        updateGroupSelector(); // Обновляем основной селектор групп
+        updateAttendanceList(); // Обновляем список посещаемости
+    }
+}
+
+/**
+ * Переключает вкладки в модальном окне
+ */
+function setupTabSwitching() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // Убираем активный класс у всех кнопок и контента
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Добавляем активный класс текущей кнопке и целевому контенту
+            this.classList.add('active');
+            document.getElementById(targetTab).classList.add('active');
+        });
+    });
+}
+
+/**
  * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
  */
 
@@ -684,6 +1037,40 @@ function initializeApp() {
         document.getElementById('stats-month-selector').addEventListener('change', function() {
             currentStatsMonth = this.value;
             updateStudentStatsDisplay();
+        });
+
+        // Кнопка открытия модального окна управления
+        document.getElementById('manage-groups-btn').addEventListener('click', openManageModal);
+        
+        // Кнопки закрытия модального окна управления
+        document.getElementById('close-manage-modal').addEventListener('click', closeManageModal);
+        document.getElementById('close-manage-modal-btn').addEventListener('click', closeManageModal);
+        
+        // Закрытие по клику вне модального окна
+        document.getElementById('manage-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeManageModal();
+            }
+        });
+        
+        // Обработчики для вкладок
+        setupTabSwitching();
+        
+        // Кнопки добавления
+        document.getElementById('add-group-btn').addEventListener('click', addNewGroup);
+        document.getElementById('add-student-btn').addEventListener('click', addNewStudent);
+        
+        // Обработка Enter в полях ввода
+        document.getElementById('new-group-name').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addNewGroup();
+            }
+        });
+        
+        document.getElementById('new-student-name').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addNewStudent();
+            }
         });
        
         // Глобальные обработчики

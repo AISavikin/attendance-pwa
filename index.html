@@ -35,9 +35,14 @@
                 <div class="header-content">
                     <div class="header-top">
                         <h1 class="header-title">📊 Посещаемость</h1>
-                        <button id="schedule-settings-btn" class="btn-icon" title="Настройки расписания">
-                            ⚙️
-                        </button>
+                        <div class="header-actions">
+                            <button id="manage-groups-btn" class="btn-icon" title="Управление группами и студентами">
+                                👥
+                            </button>
+                            <button id="schedule-settings-btn" class="btn-icon" title="Настройки расписания">
+                                ⚙️
+                            </button>
+                        </div>
                     </div>
                 
                 <div class="form-group date-input-container">
@@ -146,6 +151,73 @@
                 
                 <div class="modal-footer">
                     <button id="close-stats-btn" class="btn btn-primary w-full">Закрыть</button>
+                </div>
+            </div>
+        </div>
+        <!-- Modal for Groups and Students Management -->
+        <div id="manage-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">👥 Управление группами и студентами</h2>
+                    <button id="close-manage-modal" class="modal-close">✕</button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- Tabs Navigation -->
+                    <div class="tabs-header">
+                        <button class="tab-button active" data-tab="students-tab">Студенты</button>
+                        <button class="tab-button" data-tab="groups-tab">Группы</button>
+                    </div>
+                    
+                    <!-- Students Tab -->
+                    <div id="students-tab" class="tab-content active">
+                        <div class="form-group">
+                            <label class="form-label">Добавить нового студента</label>
+                            <div class="input-group">
+                                <input type="text" id="new-student-name" class="form-input" placeholder="ФИО студента">
+                                <select id="new-student-group" class="form-select">
+                                    <!-- Groups will be populated dynamically -->
+                                </select>
+                                <button id="add-student-btn" class="btn btn-primary">Добавить</button>
+                            </div>
+                        </div>
+                        
+                        <div class="students-list-container">
+                            <h3 class="section-title">Список студентов</h3>
+                            <div class="filter-controls">
+                                <select id="student-group-filter" class="form-select">
+                                    <option value="">Все группы</option>
+                                    <!-- Groups will be populated dynamically -->
+                                </select>
+                                <input type="text" id="student-search" class="form-input" placeholder="Поиск по имени...">
+                            </div>
+                            <div id="students-list" class="students-list">
+                                <!-- Students will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Groups Tab -->
+                    <div id="groups-tab" class="tab-content">
+                        <div class="form-group">
+                            <label class="form-label">Добавить новую группу</label>
+                            <div class="input-group">
+                                <input type="text" id="new-group-name" class="form-input" placeholder="Название группы">
+                                <button id="add-group-btn" class="btn btn-primary">Добавить</button>
+                            </div>
+                        </div>
+                        
+                        <div class="groups-list-container">
+                            <h3 class="section-title">Существующие группы</h3>
+                            <div id="groups-list" class="groups-list">
+                                <!-- Groups will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button id="close-manage-modal-btn" class="btn btn-primary w-full">Закрыть</button>
                 </div>
             </div>
         </div>

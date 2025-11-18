@@ -65,12 +65,24 @@ body {
     padding: 1rem;
 }
 
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
 .header-title {
     font-size: 1.5rem;
     font-weight: 700;
     text-align: center;
     margin-bottom: 1rem;
     color: var(--text-primary);
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
 }
 
 .form-group {
@@ -251,6 +263,45 @@ body {
     box-shadow: var(--shadow-lg);
 }
 
+.btn-danger {
+    background: var(--error-secondary);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: var(--error-primary);
+}
+
+.btn-warning {
+    background: #d97706;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #b45309;
+}
+
+.btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+    font-size: 1.25rem;
+}
+
+.btn-icon:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
 .file-input {
     position: absolute;
     opacity: 0;
@@ -353,6 +404,13 @@ body {
 /* Статистика в модальном окне */
 .stats-section {
     margin-bottom: 1.5rem;
+}
+
+.stats-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
 }
 
 .records-list {
@@ -478,104 +536,6 @@ body {
     50% { opacity: 0.5; }
 }
 
-/* Адаптивность */
-@media (max-width: 640px) {
-    .header-content,
-    .app-main {
-        padding: 0.75rem;
-    }
-    
-    .btn {
-        padding: 0.625rem 0.875rem;
-        font-size: 0.8rem;
-    }
-    
-    .modal-overlay {
-        padding: 0.75rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .student-card {
-        padding: 0.875rem;
-    }
-    
-    .student-name {
-        font-size: 0.9rem;
-    }
-    
-    .student-status {
-        font-size: 1.25rem;
-    }
-    
-    .modal-content {
-        max-height: 95vh;
-    }
-    
-    .action-buttons {
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-top: 1.5rem;
-    }
-    
-    .action-buttons .btn {
-        flex: none;
-    }
-}
-
-@media (max-width: 360px) {
-    .app-main {
-        padding: 0.5rem;
-        padding-bottom: 1.5rem;
-    }
-    
-    .action-buttons {
-        margin-top: 1rem;
-        padding: 0.75rem 0;
-    }
-}
-
-/* Утилитарные классы */
-.hidden {
-    display: none !important;
-}
-
-.text-center {
-    text-align: center;
-}
-
-.text-muted {
-    color: var(--text-muted);
-}
-
-.mb-2 {
-    margin-bottom: 0.5rem;
-}
-
-.mb-4 {
-    margin-bottom: 1rem;
-}
-
-.mt-4 {
-    margin-top: 1rem;
-}
-
-.flex {
-    display: flex;
-}
-
-.justify-between {
-    justify-content: space-between;
-}
-
-.items-center {
-    align-items: center;
-}
-
-.w-full {
-    width: 100%;
-}
-
 /* Стили для улучшенного поля ввода даты */
 .date-input-container {
     position: relative;
@@ -616,7 +576,6 @@ body {
     z-index: 2;
 }
 
-/* Убедимся, что скрытый input захватывает клики */
 .date-input-hidden::-webkit-calendar-picker-indicator {
     position: absolute;
     left: 0;
@@ -628,39 +587,15 @@ body {
     cursor: pointer;
 }
 
-/* Упрощенные стили для оффлайн-режима */
-.offline-optimized {
-    animation: none !important;
-    transition: none !important;
+/* Индикатор не учебного дня */
+.non-study-day {
+    opacity: 0.7;
 }
 
-.offline-mode .student-card {
-    background: var(--bg-secondary) !important;
-    box-shadow: var(--shadow-sm) !important;
-}
-
-/* Стили для кнопки настроек */
-.header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.btn-icon {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: var(--radius-md);
-    transition: var(--transition);
-    font-size: 1.25rem;
-}
-
-.btn-icon:hover {
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.1);
+.non-study-day .date-display::after {
+    content: " (не учебный)";
+    color: var(--text-muted);
+    font-size: 0.875rem;
 }
 
 /* Стили для выбора дней недели */
@@ -707,13 +642,295 @@ body {
     flex: 1;
 }
 
-/* Индикатор не учебного дня */
-.non-study-day {
-    opacity: 0.7;
+/* Стили для вкладок */
+.tabs-header {
+    display: flex;
+    border-bottom: 1px solid var(--border-primary);
+    margin-bottom: 1.5rem;
 }
 
-.non-study-day .date-display::after {
-    content: " (не учебный)";
-    color: var(--text-muted);
-    font-size: 0.875rem;
+.tab-button {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: var(--transition);
+    font-weight: 500;
 }
+
+.tab-button.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.tab-button:hover:not(.active) {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Стили для групп */
+.groups-list-container {
+    margin-top: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.groups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.group-item:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-tertiary);
+}
+
+.group-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.group-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.group-stats {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.group-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Стили для студентов в управлении */
+.input-group {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.input-group .form-input,
+.input-group .form-select {
+    flex: 1;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.filter-controls .form-select {
+    flex: 1;
+}
+
+.filter-controls .form-input {
+    flex: 2;
+}
+
+.students-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.student-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.student-item:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-tertiary);
+}
+
+.student-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.student-group {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.student-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Утилитарные классы */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.mt-4 {
+    margin-top: 1rem;
+}
+
+.flex {
+    display: flex;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.w-full {
+    width: 100%;
+}
+
+/* Адаптивность */
+@media (max-width: 640px) {
+    .header-content,
+    .app-main {
+        padding: 0.75rem;
+    }
+    
+    .btn {
+        padding: 0.625rem 0.875rem;
+        font-size: 0.8rem;
+    }
+    
+    .modal-overlay {
+        padding: 0.75rem;
+    }
+    
+    .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+    }
+    
+    .student-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .student-actions {
+        align-self: flex-end;
+    }
+    
+    .group-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .group-actions {
+        align-self: flex-end;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .action-buttons .btn {
+        flex: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-card {
+        padding: 0.875rem;
+    }
+    
+    .student-name {
+        font-size: 0.9rem;
+    }
+    
+    .student-status {
+        font-size: 1.25rem;
+    }
+    
+    .modal-content {
+        max-height: 95vh;
+    }
+}
+
+@media (max-width: 360px) {
+    .app-main {
+        padding: 0.5rem;
+        padding-bottom: 1.5rem;
+    }
+    
+    .action-buttons {
+        margin-top: 1rem;
+        padding: 0.75rem 0;
+    }
+}
+

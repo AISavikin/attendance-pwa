@@ -756,21 +756,7 @@ function getGroupNames() {
  * @param {number} studentId - ID студента
  * @returns {Object|null} Объект студента или null если не найден
  */
-function getStudentById(studentId) {
-    const data = loadData();
-    
-    for (const groupName in data.groups) {
-        const student = data.groups[groupName].find(s => s.id === studentId);
-        if (student) {
-            return {
-                ...student,
-                group: groupName
-            };
-        }
-    }
-    
-    return null;
-}
+
 
 /**
  * ФУНКЦИИ ДЛЯ РАБОТЫ СО СТАТИСТИКОЙ
