@@ -1405,7 +1405,7 @@ function loadStudentsTab() {
         studentItem.innerHTML = `
             <div class="student-info">
                 <span class="student-name">${student.name}</span>
-                <span class="student-group">Группа: ${student.group}</span>
+                <span class="student-group">${student.group}</span>
             </div>
             <div class="student-actions">
                 <select class="form-select move-group-select btn-sm" data-student-id="${student.id}">
