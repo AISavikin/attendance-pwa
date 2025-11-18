@@ -475,6 +475,721 @@ async function checkExistingGitHubToken() {
         }
     }
 }
+
+/**
+ * Создает резервную копию данных приложения в виде GitHub Gist
+ * 
+ * Функция выполняет следующие шаги:
+ * 1. Проверяет наличие и валидность GitHub токена
+ * 2. Загружает текущие данные приложения
+ * 3. Создает приватный Gist с данными
+ * 4. Сохраняет ID созданного Gist для последующего обновления
+ * 5. Обрабатывает различные ошибки (сеть, авторизация, квоты)
+ * 
+ * @returns {Promise<boolean>} true если бэкап создан успешно, false в случае ошибки
+ * @throws {Error} В случае критических ошибок
+ */
+async function createGithubBackup() {
+    const backupButton = document.getElementById('create-github-backup-btn');
+    const originalButtonText = backupButton.textContent;
+    
+    try {
+        // Проверяем наличие токена
+        const token = localStorage.getItem('github_token');
+        if (!token) {
+            showNotification('Ошибка: GitHub токен не настроен', 'error');
+            return false;
+        }
+
+        // Показываем индикатор загрузки
+        backupButton.textContent = 'Создание бэкапа...';
+        backupButton.disabled = true;
+
+        // Проверяем валидность токена (быстрая проверка)
+        const isValid = await validateGitHubToken(token);
+        if (!isValid) {
+            showNotification('Ошибка: Неверный GitHub токен', 'error');
+            return false;
+        }
+
+        // Загружаем данные приложения
+        const appData = loadData();
+        if (!appData || Object.keys(appData).length === 0) {
+            showNotification('Ошибка: Нет данных для бэкапа', 'error');
+            return false;
+        }
+
+        // Подготавливаем данные для Gist
+        const backupData = {
+            description: `Резервная копия посещаемости от ${new Date().toLocaleString('ru-RU')}`,
+            public: false,
+            files: {
+                'attendance-backup.json': {
+                    content: JSON.stringify({
+                        version: '1.0',
+                        timestamp: new Date().toISOString(),
+                        app: 'Attendance Tracker',
+                        data: appData
+                    }, null, 2)
+                }
+            }
+        };
+
+        // Получаем существующий Gist ID (если есть)
+        const existingGistId = localStorage.getItem('github_gist_id');
+        
+        let response;
+        if (existingGistId) {
+            // Обновляем существующий Gist
+            response = await updateExistingGist(token, existingGistId, backupData);
+            showNotification('Резервная копия обновлена в GitHub', 'success');
+        } else {
+            // Создаем новый Gist
+            response = await createNewGist(token, backupData);
+            
+            // Сохраняем ID созданного Gist для будущих обновлений
+            if (response && response.id) {
+                localStorage.setItem('github_gist_id', response.id);
+                showNotification('Резервная копия создана в GitHub', 'success');
+            }
+        }
+
+        // Логируем информацию о созданном Gist
+        if (response) {
+            console.log('GitHub Gist создан/обновлен:', {
+                id: response.id,
+                url: response.html_url,
+                files: Object.keys(response.files)
+            });
+            
+            // Показываем ссылку на Gist (опционально)
+            showNotification(`Бэкап создан: ${response.html_url}`, 'success');
+        }
+
+        return true;
+
+    } catch (error) {
+        console.error('Ошибка создания GitHub бэкапа:', error);
+        
+        // Обрабатываем различные типы ошибок
+        if (error.message.includes('401') || error.message.includes('403')) {
+            showNotification('Ошибка: Недостаточно прав GitHub токена', 'error');
+        } else if (error.message.includes('422')) {
+            showNotification('Ошибка: Некорректные данные для Gist', 'error');
+        } else if (error.message.includes('network') || !navigator.onLine) {
+            showNotification('Ошибка: Нет подключения к интернету', 'error');
+        } else {
+            showNotification(`Ошибка создания бэкапа: ${error.message}`, 'error');
+        }
+        
+        return false;
+    } finally {
+        // Восстанавливаем кнопку в любом случае
+        backupButton.textContent = originalButtonText;
+        backupButton.disabled = false;
+    }
+}
+
+/**
+ * Создает новый Gist в GitHub
+ * @param {string} token - GitHub Personal Access Token
+ * @param {Object} gistData - Данные для Gist
+ * @returns {Promise<Object>} Ответ от GitHub API
+ */
+async function createNewGist(token, gistData) {
+    const response = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'Attendance-App'
+        },
+        body: JSON.stringify(gistData)
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+}
+
+/**
+ * Обновляет существующий Gist в GitHub
+ * @param {string} token - GitHub Personal Access Token
+ * @param {string} gistId - ID существующего Gist
+ * @param {Object} gistData - Новые данные для Gist
+ * @returns {Promise<Object>} Ответ от GitHub API
+ */
+async function updateExistingGist(token, gistId, gistData) {
+    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'Attendance-App'
+        },
+        body: JSON.stringify(gistData)
+    });
+
+    if (!response.ok) {
+        // Если Gist не найден, возможно он был удален - создаем новый
+        if (response.status === 404) {
+            localStorage.removeItem('github_gist_id');
+            return await createNewGist(token, gistData);
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
+}
+
+/**
+ * Проверяет существование и доступность Gist
+ * @param {string} token - GitHub Personal Access Token
+ * @param {string} gistId - ID Gist для проверки
+ * @returns {Promise<boolean>} true если Gist существует и доступен
+ */
+async function checkGistExists(token, gistId) {
+    try {
+        const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Attendance-App'
+            }
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Ошибка проверки Gist:', error);
+        return false;
+    }
+}
+
+/**
+ * Получает информацию о существующем Gist
+ * @returns {Promise<Object|null>} Информация о Gist или null если ошибка
+ */
+async function getGistInfo() {
+    const token = localStorage.getItem('github_token');
+    const gistId = localStorage.getItem('github_gist_id');
+    
+    if (!token || !gistId) {
+        return null;
+    }
+
+    try {
+        const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Attendance-App'
+            }
+        });
+
+        if (response.ok) {
+            return await response.json();
+        }
+        return null;
+    } catch (error) {
+        console.error('Ошибка получения информации о Gist:', error);
+        return null;
+    }
+}
+
+/**
+ * Обновляет статус кнопки бэкапа на основе существующего Gist
+ */
+async function updateBackupButtonStatus() {
+    const backupButton = document.getElementById('create-github-backup-btn');
+    const gistInfo = await getGistInfo();
+    
+    if (gistInfo) {
+        const updatedAt = new Date(gistInfo.updated_at);
+        backupButton.textContent = `Обновить бэкап (${updatedAt.toLocaleDateString('ru-RU')})`;
+        backupButton.title = `Последнее обновление: ${updatedAt.toLocaleString('ru-RU')}`;
+    } else {
+        backupButton.textContent = 'Создать резервную копию';
+        backupButton.title = 'Создать новую резервную копию в GitHub';
+    }
+}
+
+/**
+ * Восстанавливает данные приложения из резервной копии в GitHub Gist
+ * 
+ * Функция выполняет следующие шаги:
+ * 1. Проверяет наличие и валидность GitHub токена
+ * 2. Получает список доступных Gist или использует сохраненный Gist ID
+ * 3. Показывает диалог выбора бэкапа (если несколько)
+ * 4. Загружает выбранный Gist и извлекает данные
+ * 5. Проверяет целостность и структуру данных
+ * 6. Создает резервную копию текущих данных перед восстановлением
+ * 7. Восстанавливает данные и обновляет интерфейс
+ * 
+ * @returns {Promise<boolean>} true если восстановление прошло успешно, false в случае ошибки
+ */
+async function restoreFromGithubBackup() {
+    const restoreButton = document.getElementById('restore-github-backup-btn');
+    const originalButtonText = restoreButton.textContent;
+    
+    try {
+        // Проверяем наличие токена
+        const token = localStorage.getItem('github_token');
+        if (!token) {
+            showNotification('Ошибка: GitHub токен не настроен', 'error');
+            return false;
+        }
+
+        // Показываем индикатор загрузки
+        restoreButton.textContent = 'Поиск бэкапов...';
+        restoreButton.disabled = true;
+
+        // Получаем список доступных Gist
+        const gists = await getBackupGists(token);
+        if (!gists || gists.length === 0) {
+            showNotification('Не найдено резервных копий в GitHub', 'warning');
+            return false;
+        }
+
+        // Показываем диалог выбора бэкапа
+        const selectedGist = await showGistSelectionDialog(gists);
+        if (!selectedGist) {
+            showNotification('Восстановление отменено', 'info');
+            return false;
+        }
+
+        // Загружаем данные из выбранного Gist
+        restoreButton.textContent = 'Загрузка данных...';
+        const backupData = await loadGistData(token, selectedGist.id);
+        
+        if (!backupData) {
+            showNotification('Ошибка: Не удалось загрузить данные из бэкапа', 'error');
+            return false;
+        }
+
+        // Проверяем структуру данных
+        if (!isValidBackupData(backupData)) {
+            showNotification('Ошибка: Некорректная структура данных в бэкапе', 'error');
+            return false;
+        }
+
+        // Создаем резервную копию текущих данных перед восстановлением
+        if (!createBackup()) {
+            showNotification('Предупреждение: Не удалось создать резервную копию текущих данных', 'warning');
+        }
+
+        // Запрашиваем подтверждение
+        const confirmation = await showRestoreConfirmationDialog(backupData, selectedGist);
+        if (!confirmation) {
+            showNotification('Восстановление отменено', 'info');
+            return false;
+        }
+
+        // Восстанавливаем данные
+        restoreButton.textContent = 'Восстановление...';
+        const success = await performDataRestore(backupData);
+        
+        if (success) {
+            showNotification('Данные успешно восстановлены из GitHub', 'success');
+            
+            // Обновляем интерфейс
+            if (onDataImportedCallback) {
+                onDataImportedCallback();
+            }
+            
+            return true;
+        } else {
+            showNotification('Ошибка при восстановлении данных', 'error');
+            return false;
+        }
+
+    } catch (error) {
+        console.error('Ошибка восстановления из GitHub бэкапа:', error);
+        
+        // Обрабатываем различные типы ошибок
+        if (error.message.includes('401') || error.message.includes('403')) {
+            showNotification('Ошибка: Недостаточно прав GitHub токена', 'error');
+        } else if (error.message.includes('404')) {
+            showNotification('Ошибка: Резервная копия не найдена', 'error');
+        } else if (error.message.includes('network') || !navigator.onLine) {
+            showNotification('Ошибка: Нет подключения к интернету', 'error');
+        } else {
+            showNotification(`Ошибка восстановления: ${error.message}`, 'error');
+        }
+        
+        return false;
+    } finally {
+        // Восстанавливаем кнопку в любом случае
+        restoreButton.textContent = originalButtonText;
+        restoreButton.disabled = false;
+    }
+}
+
+/**
+ * Получает список Gist с резервными копиями
+ * @param {string} token - GitHub Personal Access Token
+ * @returns {Promise<Array>} Массив Gist с резервными копиями
+ */
+async function getBackupGists(token) {
+    try {
+        // Получаем список всех Gist пользователя
+        const response = await fetch('https://api.github.com/gists', {
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Attendance-App'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const allGists = await response.json();
+        
+        // Фильтруем только Gist с резервными копиями нашего приложения
+        const backupGists = allGists.filter(gist => {
+            // Проверяем наличие файла с бэкапом
+            const hasBackupFile = gist.files && gist.files['attendance-backup.json'];
+            
+            // Проверяем описание (опционально)
+            const isBackup = gist.description && 
+                (gist.description.includes('Резервная копия посещаемости') || 
+                 gist.description.includes('Attendance Tracker'));
+            
+            return hasBackupFile && isBackup;
+        });
+
+        // Сортируем по дате обновления (новые сначала)
+        return backupGists.sort((a, b) => 
+            new Date(b.updated_at) - new Date(a.updated_at)
+        );
+
+    } catch (error) {
+        console.error('Ошибка получения списка Gist:', error);
+        throw error;
+    }
+}
+
+/**
+ * Показывает диалог выбора Gist для восстановления
+ * @param {Array} gists - Массив доступных Gist
+ * @returns {Promise<Object|null>} Выбранный Gist или null если отменено
+ */
+async function showGistSelectionDialog(gists) {
+    return new Promise((resolve) => {
+        // Создаем модальное окно выбора
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.style.display = 'block';
+        
+        const gistItems = gists.map(gist => `
+            <div class="gist-item" data-gist-id="${gist.id}">
+                <div class="gist-info">
+                    <div class="gist-description">${gist.description || 'Без описания'}</div>
+                    <div class="gist-meta">
+                        Обновлен: ${new Date(gist.updated_at).toLocaleString('ru-RU')}
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-sm select-gist-btn">Выбрать</button>
+            </div>
+        `).join('');
+
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">📥 Выбор резервной копии</h2>
+                    <button class="modal-close" id="close-gist-selector">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p class="form-text">Выберите резервную копию для восстановления:</p>
+                    <div class="gist-list" style="max-height: 400px; overflow-y: auto;">
+                        ${gistItems}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancel-gist-selector">Отмена</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Обработчики для выбора Gist
+        modal.querySelectorAll('.select-gist-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const gistItem = this.closest('.gist-item');
+                const gistId = gistItem.getAttribute('data-gist-id');
+                const selectedGist = gists.find(g => g.id === gistId);
+                modal.remove();
+                resolve(selectedGist);
+            });
+        });
+
+        // Обработчики закрытия
+        modal.querySelector('#close-gist-selector').addEventListener('click', () => {
+            modal.remove();
+            resolve(null);
+        });
+
+        modal.querySelector('#cancel-gist-selector').addEventListener('click', () => {
+            modal.remove();
+            resolve(null);
+        });
+
+        // Закрытие по клику вне модального окна
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                resolve(null);
+            }
+        });
+    });
+}
+
+/**
+ * Загружает данные из конкретного Gist
+ * @param {string} token - GitHub Personal Access Token
+ * @param {string} gistId - ID Gist
+ * @returns {Promise<Object|null>} Данные из бэкапа или null при ошибке
+ */
+async function loadGistData(token, gistId) {
+    try {
+        const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Attendance-App'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const gist = await response.json();
+        const backupFile = gist.files['attendance-backup.json'];
+        
+        if (!backupFile || !backupFile.content) {
+            throw new Error('Файл с резервной копией не найден в Gist');
+        }
+
+        return JSON.parse(backupFile.content);
+
+    } catch (error) {
+        console.error('Ошибка загрузки данных из Gist:', error);
+        throw error;
+    }
+}
+
+/**
+ * Проверяет валидность данных из бэкапа
+ * @param {Object} backupData - Данные из бэкапа
+ * @returns {boolean} true если данные валидны
+ */
+function isValidBackupData(backupData) {
+    // Проверяем базовую структуру
+    if (!backupData || typeof backupData !== 'object') {
+        return false;
+    }
+
+    // Проверяем наличие обязательных полей
+    if (!backupData.version || !backupData.timestamp || !backupData.data) {
+        return false;
+    }
+
+    // Проверяем структуру данных приложения
+    return isValidDataStructure(backupData.data);
+}
+
+/**
+ * Показывает диалог подтверждения восстановления
+ * @param {Object} backupData - Данные из бэкапа
+ * @param {Object} gist - Информация о Gist
+ * @returns {Promise<boolean>} true если пользователь подтвердил
+ */
+async function showRestoreConfirmationDialog(backupData, gist) {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.style.display = 'block';
+
+        const backupDate = new Date(backupData.timestamp).toLocaleString('ru-RU');
+        const gistDate = new Date(gist.updated_at).toLocaleString('ru-RU');
+
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">⚠️ Подтверждение восстановления</h2>
+                    <button class="modal-close" id="close-restore-confirm">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p>Вы уверены, что хотите восстановить данные из резервной копии?</p>
+                    
+                    <div class="backup-info" style="background: var(--bg-primary); padding: 1rem; border-radius: var(--radius-md); margin: 1rem 0;">
+                        <p><strong>Дата создания:</strong> ${backupDate}</p>
+                        <p><strong>Дата обновления в GitHub:</strong> ${gistDate}</p>
+                        <p><strong>Версия:</strong> ${backupData.version}</p>
+                        <p><strong>Описание:</strong> ${gist.description || 'Нет описания'}</p>
+                    </div>
+                    
+                    <p class="form-text" style="color: var(--error-secondary);">
+                        ⚠️ Внимание: Текущие данные будут полностью заменены.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancel-restore">Отмена</button>
+                    <button class="btn btn-primary" id="confirm-restore">Восстановить</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Обработчики
+        modal.querySelector('#confirm-restore').addEventListener('click', () => {
+            modal.remove();
+            resolve(true);
+        });
+
+        modal.querySelector('#cancel-restore').addEventListener('click', () => {
+            modal.remove();
+            resolve(false);
+        });
+
+        modal.querySelector('#close-restore-confirm').addEventListener('click', () => {
+            modal.remove();
+            resolve(false);
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                resolve(false);
+            }
+        });
+    });
+}
+
+/**
+ * Выполняет восстановление данных
+ * @param {Object} backupData - Данные из бэкапа
+ * @returns {boolean} true если восстановление успешно
+ */
+function performDataRestore(backupData) {
+    try {
+        // Извлекаем данные приложения из бэкапа
+        const appData = backupData.data;
+        
+        // Сохраняем данные
+        if (saveData(appData)) {
+            // Обновляем сохраненный Gist ID для будущих обновлений
+            // (опционально, можно сохранить ID последнего восстановленного Gist)
+            
+            return true;
+        } else {
+            return false;
+        }
+    } catch (error) {
+        console.error('Ошибка при восстановлении данных:', error);
+        return false;
+    }
+}
+
+/**
+ * Получает информацию о последнем бэкапе для отображения в интерфейсе
+ */
+async function updateRestoreButtonStatus() {
+    const restoreButton = document.getElementById('restore-github-backup-btn');
+    const token = localStorage.getItem('github_token');
+    
+    if (!token) {
+        restoreButton.textContent = 'Восстановить из резервной копии';
+        restoreButton.title = 'Требуется настройка GitHub токена';
+        return;
+    }
+
+    try {
+        const gists = await getBackupGists(token);
+        if (gists && gists.length > 0) {
+            const latestGist = gists[0];
+            const updatedAt = new Date(latestGist.updated_at);
+            restoreButton.textContent = `Восстановить (${gists.length} доступно)`;
+            restoreButton.title = `Последний бэкап: ${updatedAt.toLocaleString('ru-RU')}`;
+        } else {
+            restoreButton.textContent = 'Восстановить из резервной копии';
+            restoreButton.title = 'Резервные копии не найдены';
+        }
+    } catch (error) {
+        console.error('Ошибка обновления статуса кнопки восстановления:', error);
+        restoreButton.textContent = 'Восстановить из резервной копии';
+        restoreButton.title = 'Ошибка проверки бэкапов';
+    }
+}
+
+/**
+ * Проверяет наличие и валидность сохраненного токена GitHub при загрузке приложения
+ */
+async function checkExistingGitHubToken() {
+    const token = localStorage.getItem('github_token');
+    const statusElement = document.getElementById('github-status');
+    const tokenInput = document.getElementById('github-token');
+    
+    if (token && statusElement) {
+        // Заполняем поле ввода
+        if (tokenInput) {
+            tokenInput.value = token;
+        }
+        
+        try {
+            const isValid = await validateGitHubToken(token);
+            
+            if (isValid) {
+                statusElement.innerHTML = '<span>✓</span><span>Токен GitHub настроен и проверен</span>';
+                statusElement.className = 'status-badge status-success';
+                
+                // Обновляем статус кнопок бэкапа и восстановления
+                await updateBackupButtonStatus();
+                await updateRestoreButtonStatus();
+            } else {
+                // Токен устарел или стал невалидным
+                statusElement.innerHTML = '<span>⚠</span><span>Токен GitHub устарел</span>';
+                statusElement.className = 'status-badge status-error';
+                localStorage.removeItem('github_token');
+                localStorage.removeItem('github_gist_id');
+                if (tokenInput) {
+                    tokenInput.value = '';
+                }
+            }
+        } catch (error) {
+            if (error.message === 'NETWORK_ERROR') {
+                // В случае ошибки сети оставляем токен, но отмечаем что нужна проверка
+                statusElement.innerHTML = '<span>⚠</span><span>Токен GitHub (требуется проверка)</span>';
+                statusElement.className = 'status-badge status-error';
+            } else {
+                // Другие ошибки
+                statusElement.innerHTML = '<span>❌</span><span>Ошибка проверки токена</span>';
+                statusElement.className = 'status-badge status-error';
+                localStorage.removeItem('github_token');
+                localStorage.removeItem('github_gist_id');
+                if (tokenInput) {
+                    tokenInput.value = '';
+                }
+            }
+        }
+    } else if (statusElement) {
+        // Токена нет
+        statusElement.innerHTML = '<span>⚠</span><span>Токен GitHub не настроен</span>';
+        statusElement.className = 'status-badge status-error';
+    }
+}
 /**
  * ФУНКЦИИ ДЛЯ РАБОТЫ СО СТАТИСТИКОЙ СТУДЕНТА
  */
