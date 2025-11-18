@@ -64,35 +64,28 @@ function updateAttendanceList() {
     const date = document.getElementById('date-selector').value;
     const group = document.getElementById('group-selector').value;
     
-    const groups = getGroups();
-    const students = groups[group] || [];
+    const students = getStudentsInGroup(group);
     const attendance = getAttendanceForDate(date);
     
     const container = document.getElementById('students-container');
     container.innerHTML = '';
     
-    // Показываем сообщение если в группе нет студентов
     if (students.length === 0) {
         container.innerHTML = '<div class="text-center text-muted">Нет студентов в группе</div>';
         return;
     }
     
-    // Создаем карточки для каждого студента
     students.forEach(student => {
         const present = attendance[student.id] !== undefined ? attendance[student.id] : null;
         const studentCard = createStudentCard(student, present);
         container.appendChild(studentCard);
         
-        // Добавляем обработчики событий для карточки
         setupStudentCardEventHandlers(studentCard, student.id);
     });
 }
 
 /**
  * Создает DOM-элемент карточки студента
- * @param {Object} student - Объект студента
- * @param {boolean|null} present - Статус присутствия
- * @returns {HTMLElement} Элемент карточки студента
  */
 function createStudentCard(student, present) {
     const studentCard = document.createElement('div');
@@ -115,24 +108,21 @@ function createStudentCard(student, present) {
 
 /**
  * Настраивает обработчики событий для карточки студента
- * @param {HTMLElement} studentCard - Элемент карточки студента
- * @param {number} studentId - ID студента
  */
 function setupStudentCardEventHandlers(studentCard, studentId) {
-    // Обработчик клика по карточке (отметка посещаемости)
     studentCard.addEventListener('click', (e) => {
         if (!e.target.closest('.student-status-btn')) {
             toggleAttendance(studentId, studentCard);
         }
     });
     
-    // Обработчик для кнопки статистики
     const statsBtn = studentCard.querySelector('.student-status-btn');
     statsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         openStudentStats(studentId);
     });
 }
+
 
 /**
  * ФУНКЦИИ ДЛЯ РАБОТЫ С ПОСЕЩАЕМОСТЬЮ
@@ -460,11 +450,9 @@ function updateGroupSelector() {
     const groupNames = getGroupNames();
     const groupSelector = document.getElementById('group-selector');
     
-    // Сохраняем текущее выбранное значение
     const currentValue = groupSelector.value;
-    
-    // Очищаем и заполняем селектор
     groupSelector.innerHTML = '';
+    
     groupNames.forEach(groupName => {
         const option = document.createElement('option');
         option.value = groupName;
@@ -472,13 +460,15 @@ function updateGroupSelector() {
         groupSelector.appendChild(option);
     });
     
-    // Восстанавливаем выбранное значение
     if (groupNames.includes(currentValue)) {
         groupSelector.value = currentValue;
     } else if (groupNames.length > 0) {
         groupSelector.value = groupNames[0];
     }
+    
+    console.log('Group selector updated with groups:', groupNames);
 }
+
 
 /**
  * ФУНКЦИИ ДЛЯ РАБОТЫ С PWA И ОФФЛАЙН-РЕЖИМОМ
