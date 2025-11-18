@@ -502,9 +502,14 @@ body {
     background: #f59e0b;
     color: white;
     text-align: center;
-    padding: 0.5rem;
+    padding: 0.25rem;
     z-index: 1002;
     font-weight: 500;
+    font-size: 0.75rem;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Индикатор загрузки */
