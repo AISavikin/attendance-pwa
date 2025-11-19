@@ -109,7 +109,7 @@ function getDefaultDataStructure() {
             6: { id: 6, name: 'Федорова Елена' }
         },
         attendance: {},
-        schedule: [1, 2, 3, 4, 5], // пн-пт по умолчанию
+        schedule: [3, 5], // пн-пт по умолчанию
         nextStudentId: 7 // следующий доступный ID
     };
 }
