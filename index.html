@@ -84,18 +84,6 @@
                 </div>
                 
                 <div class="modal-body">
-                    <!-- Локальный бекап -->
-                    <div class="settings-section">
-                        <h3 class="section-title">Локальный бекап</h3>
-                        
-                        <div class="backup-actions">
-                            <button id="export-data-btn" class="btn btn-secondary btn-sm">📤 Экспорт в JSON</button>
-                            <label class="btn btn-success btn-sm">
-                                📥 Импорт из JSON
-                                <input type="file" id="import-file-settings" class="file-input" accept=".json">
-                            </label>
-                        </div>
-                    </div>
                     
                  <!-- GitHub синхронизация -->
                     <div class="settings-section">
@@ -118,6 +106,7 @@
                             <button id="restore-github-backup-btn" class="btn btn-secondary btn-sm">Восстановить из резервной копии</button>
                         </div>
                     </div>
+
                     <!-- Рабочие дни -->
                     <div class="settings-section">
                         <h3 class="section-title">Рабочие дни</h3>
@@ -146,6 +135,21 @@
                         
                         <button id="save-schedule-btn" class="btn btn-sm" style="margin-top: 1rem;">Сохранить расписание</button>
                     </div>
+
+                    <!-- Локальный бекап -->
+                    <div class="settings-section">
+                        <h3 class="section-title">Локальный бекап</h3>
+                        
+                        <div class="backup-actions">
+                            <button id="export-data-btn" class="btn btn-secondary btn-sm">📤 Экспорт в JSON</button>
+                            <label class="btn btn-success btn-sm">
+                                📥 Импорт из JSON
+                                <input type="file" id="import-file-settings" class="file-input" accept=".json">
+                            </label>
+                        </div>
+                    </div>
+                    
+                    
                 </div>
                 
                 <div class="modal-footer">
